@@ -1,0 +1,12 @@
+# ASP.NET Core 7.0用のイメージを使用
+FROM mcr.microsoft.com/dotnet/aspnet:7.0
+
+# appディレクトリを作成し、その中に先ほど作成したファイル一式をコピー
+RUN mkdir /app
+WORKDIR /app
+COPY ./bin/Release/net7.0 .
+
+# 4040ポートで実行
+EXPOSE 4040
+ENV ASPNETCORE_URLS=http://+:4040
+ENTRYPOINT ["dotnet", "aLice_utils.Server.dll"]
