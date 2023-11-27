@@ -1,0 +1,54 @@
+@using BlazorStrap
+@using CatSdk.Symbol
+@using CatSdk.Utils
+@using BlazorStrap.Extensions.FluentValidation
+@using aLice_utils.Client.Services
+
+<h3>TransferTransaction</h3>
+<BSForm Model="Transaction" OnValidSubmit="Submit">
+    <FluentValidator TValidator="Validator.TransferTransactionValidator" />
+    <TransactionHeader TransactionMeta="Transaction.TransactionMeta"></TransactionHeader>
+    <TransferTransactionBody InnerTransferTransaction="Transaction.InnerTransferTransaction"></TransferTransactionBody>
+    <BSInputGroup MarginBottom="Margins.Medium">
+        <BSButton IsSubmit="true" Color="BSColor.Primary">Submit</BSButton>
+    </BSInputGroup>
+</BSForm>
+<Result qrSource="@qrSource" alice="@alice" isResult="@isResult" showSpinner="@showSpinner"></Result>
+
+@code {
+    public readonly aLice_utils.Shared.Models.Transaction.TransferTransaction Transaction = new ();
+    private string? qrSource;
+    string? alice;
+    bool isResult;
+    bool showSpinner;
+    
+    private async void Submit()
+    {
+        showSpinner = true;
+        var tx = new TransferTransactionV1
+        {
+            Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? CatSdk.Symbol.NetworkType.MAINNET : CatSdk.Symbol.NetworkType.TESTNET
+        };
+        if(Transaction.InnerTransferTransaction.RecipientAddress != "") tx.RecipientAddress = new UnresolvedAddress(Converter.StringToAddress(Transaction.InnerTransferTransaction.RecipientAddress));
+        if (Transaction.InnerTransferTransaction.Message != "") tx.Message = Converter.Utf8ToPlainMessage(Transaction.InnerTransferTransaction.Message);
+        if (Transaction.InnerTransferTransaction.Mosaics is {Count: > 0 })
+        {
+            tx.Mosaics = new UnresolvedMosaic[] {};
+            foreach (var m in Transaction.InnerTransferTransaction.Mosaics.Select(mosaic => new UnresolvedMosaic()
+            {
+                MosaicId = new UnresolvedMosaicId(Convert.ToUInt64(mosaic.Id, 16)),
+                Amount = new Amount(ulong.Parse(mosaic.Amount))
+            }))
+            {
+                tx.Mosaics.ToList().Add(m);
+            }
+        }
+        TransactionHelper.SetMaxFee(tx, int.Parse(Transaction.TransactionMeta.FeeMultiplier));
+        
+        alice = $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(tx.Serialize())}&deadline={Transaction.TransactionMeta.Deadline}&method=announce&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}";
+        qrSource = await QRServices.GenerateQR(alice);
+        showSpinner = false;
+        isResult = true;
+        StateHasChanged();
+    }
+}

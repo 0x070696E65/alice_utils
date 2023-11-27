@@ -4,7 +4,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:7.0
 # appディレクトリを作成し、その中に先ほど作成したファイル一式をコピー
 RUN mkdir /app
 WORKDIR /app
-COPY ./bin/Release/net7.0 .
+COPY ./bin/Release/net7.0/publish .
 
 # 4040ポートで実行
 EXPOSE 4040

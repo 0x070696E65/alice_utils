@@ -1,0 +1,143 @@
+@using BlazorStrap
+@using CatSdk.Symbol
+@using CatSdk.Utils
+@using BlazorStrap.Extensions.FluentValidation
+@using aLice_utils.Client.Services
+@using aLice_utils.Shared.Models
+@using aLice_utils.Client.Components.TransactionForms
+@using aLice_utils.Shared.Models.Transaction
+@using BlazorStrap.Extensions.FluentValidation
+@using BlazorStrap.V5
+@using CatSdk.Facade
+
+<h3>AggregateCompleteTransaction</h3>
+<BSForm Model="Transaction" OnValidSubmit="Submit">
+    @*<FluentValidator TValidator="Validator.TransferTransactionValidator" />*@
+    <TransactionHeader TransactionMeta="Transaction.TransactionMeta"></TransactionHeader>
+    
+    <BSDropdown>
+        <Toggler><BSToggle IsButton="true" Color="BSColor.Secondary">Add Transaction</BSToggle></Toggler>
+        <Content>
+            @foreach (var option in TransactionTypeExtension.GetTransactionTypeList())
+            {
+                <BSDropdownItem OnClick="() => AddTransaction(option)">@option</BSDropdownItem>
+            }
+        </Content>
+    </BSDropdown>
+    
+    <BSRow MarginBottom="Margins.Medium" MarginTop="Margins.Medium">
+            @foreach (var transactionComponent in transactionComponents)
+            {
+                <BSCard CardType="CardType.Card" MarginBottom="Margins.Medium" PaddingTop="Padding.Medium">
+                    <H5>@transactionComponent.Keys.First()</H5>
+                    @transactionComponent.Values.First()
+                </BSCard>
+            }
+    </BSRow>
+    
+    <BSInputGroup MarginBottom="Margins.Medium">
+        <BSButton IsSubmit="true" Color="BSColor.Primary">Submit</BSButton>
+    </BSInputGroup>
+</BSForm>
+<Result qrSource="@qrSource" alice="@alice" isResult="@isResult" showSpinner="@showSpinner"></Result>
+
+@code {
+    public readonly aLice_utils.Shared.Models.Transaction.AggregateCompleteTransaction Transaction = new ();
+    private readonly List<IInnerTransaction> InnerTransactions = new ();
+    private readonly List<Dictionary<string, RenderFragment>> transactionComponents = new ();
+    private int componentCounter;
+    
+    private string? qrSource;
+    string? alice;
+    bool isResult;
+    bool showSpinner;
+
+    private void AddTransaction(string option)
+    {
+        var transactionComponent = CreateTransactionComponent(option);
+        transactionComponents.Add(new Dictionary<string, RenderFragment>()
+        {
+            {option, transactionComponent}
+        });
+    }
+    
+    private RenderFragment CreateTransactionComponent(string option)
+    {
+        componentCounter++;
+        var localCounter = componentCounter;
+        IInnerTransaction? tx = null;
+        var name = "";
+        if (option == "TransferTransaction")
+        {
+            tx = new InnerTransferTransaction();
+            InnerTransactions.Add(tx);
+            name = "InnerTransferTransaction";
+        }
+        
+        return builder =>
+        {
+            if (name != "")
+            {
+                builder.OpenComponent(localCounter, Type.GetType($"aLice_utils.Client.Components.TransactionForms.{option}Body") ?? throw new InvalidOperationException());
+                builder.AddAttribute(localCounter, name, tx);
+                builder.CloseElement();
+            }
+            else
+            {
+                builder.OpenElement(localCounter, "div");
+                builder.AddContent(localCounter, $"Transaction type {option} not implemented yet");
+                builder.CloseElement();
+            }
+        };
+    }
+    
+    private async void Submit()
+    {
+        showSpinner = true;
+
+        var aggTx = new AggregateCompleteTransactionV2()
+        {
+            Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? CatSdk.Symbol.NetworkType.MAINNET : CatSdk.Symbol.NetworkType.TESTNET
+        };
+        var innerTransactions = new List<IBaseTransaction>();
+        foreach (var t in InnerTransactions)
+        {
+            if (t.GetType() == typeof(InnerTransferTransaction))
+            {
+                if(t is not InnerTransferTransaction innerTx) continue;
+                var innerTransferTranasction = new EmbeddedTransferTransactionV1
+                {
+                    Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? CatSdk.Symbol.NetworkType.MAINNET : CatSdk.Symbol.NetworkType.TESTNET
+                };
+                if(innerTx.RecipientAddress != "") innerTransferTranasction.RecipientAddress = new UnresolvedAddress(Converter.StringToAddress(innerTx.RecipientAddress));
+                if (innerTx.Message != "") innerTransferTranasction.Message = Converter.Utf8ToPlainMessage(innerTx.Message);
+                if (innerTx.Mosaics is {Count: > 0 })
+                {
+                    innerTransferTranasction.Mosaics = new UnresolvedMosaic[] {};
+                    foreach (var m in innerTx.Mosaics.Select(mosaic => new UnresolvedMosaic()
+                    {
+                        MosaicId = new UnresolvedMosaicId(Convert.ToUInt64(mosaic.Id, 16)),
+                        Amount = new Amount(ulong.Parse(mosaic.Amount))
+                    }))
+                    {
+                        var ml = innerTransferTranasction.Mosaics.ToList();
+                        ml.Add(m);
+                        innerTransferTranasction.Mosaics = ml.ToArray();
+                    }
+                }
+                innerTransactions.Add(innerTransferTranasction);
+            }
+        }
+        var merkleHash = SymbolFacade.HashEmbeddedTransactions(innerTransactions.ToArray());
+        aggTx.TransactionsHash = merkleHash;
+        aggTx.Transactions = innerTransactions.ToArray();
+        TransactionHelper.SetMaxFee(aggTx, int.Parse(Transaction.TransactionMeta.FeeMultiplier));
+        
+        alice = $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(aggTx.Serialize())}&deadline={Transaction.TransactionMeta.Deadline}&method=announce&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}";
+        qrSource = await QRServices.GenerateQR(alice);
+        
+        showSpinner = false;
+        isResult = true;
+        StateHasChanged();
+    }
+}

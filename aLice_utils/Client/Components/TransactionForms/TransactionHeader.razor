@@ -1,0 +1,65 @@
+@using BlazorStrap
+@using System.ComponentModel
+@using aLice_utils.Client.Services
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">NetworkType</span>
+        <BSInputCheckbox CheckedValue="@("MainNet")" @bind-Value="TransactionMeta.NetworkType" UnCheckedValue="@("TestNet")" IsToggle="true" Color="BSColor.Secondary">
+            @TransactionMeta.NetworkType
+        </BSInputCheckbox>
+    </BSInputGroup>
+</BSRow>
+<ValidationMessage For="@(() => TransactionMeta.NetworkType)" />
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Deadline</span>
+        <BSInput InputType="InputType.Number" placeholder="Seconds..." @bind-Value="TransactionMeta.Deadline"/>
+        <span class="@BS.Input_Group_Text">seconds...</span>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => TransactionMeta.Deadline)"/>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Node</span>
+        <BSInput InputType="InputType.Text" placeholder="Node" @bind-Value="TransactionMeta.Node"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => TransactionMeta.Node)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">FeeMultiplier</span>
+        <BSInput InputType="InputType.Number" placeholder="FeeMultiplier" @bind-Value="TransactionMeta.FeeMultiplier"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => TransactionMeta.FeeMultiplier)"/>
+</BSRow>
+@code {
+    [Parameter]
+    public aLice_utils.Shared.Models.Transaction.TransactionMeta TransactionMeta { get; set; } = new ();
+
+    private readonly NodeServices nodeServices = new NodeServices();
+    
+    protected override async void OnInitialized()
+    {
+        await base.OnInitializedAsync();
+        TransactionMeta.PropertyChanged += OnTransactionPropertyChanged;
+        await OnNetworkTypeChanged();
+    }
+    
+    // Transaction プロパティが変更されたときに呼び出されるメソッド
+    private async void OnTransactionPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // プロパティが変更されたときに実行したい処理をここに記述
+        if (e.PropertyName == nameof(TransactionMeta.NetworkType))
+        {
+            // NetworkType プロパティが変更されたときの処理
+            await OnNetworkTypeChanged();
+        }
+    }
+    
+    private async Task OnNetworkTypeChanged()
+    {
+        var node = await nodeServices.GetNode(TransactionMeta.NetworkType);
+        TransactionMeta.Node = node;
+        StateHasChanged();
+    }
+}

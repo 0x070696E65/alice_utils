@@ -35,6 +35,11 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "dotnet": {
+      "commandName": "Project",
+      "environmentVariables": {},
+      "hotReloadProfile": "aspnetcore"
     }
   }
 }

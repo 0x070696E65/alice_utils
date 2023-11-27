@@ -1,0 +1,41 @@
+@using BlazorStrap
+@inject NavigationManager NavigationManager
+
+@if (showSpinner)
+{
+    <BSSpinner Color="BSColor.Secondary" />
+}
+@if (isResult)
+{
+    <BSRow MarginBottom="Margins.Medium">
+        <BSInputGroup>
+            <span class="@BS.Input_Group_Text">aLice code</span>
+            <BSInput InputType="InputType.TextArea" placeholder="aLice" @bind-Value="alice"/>
+        </BSInputGroup>
+    </BSRow>
+    <BSRow MarginBottom="Margins.Medium">
+        <BSButton Color="BSColor.Success" OnClick="@OpenAlice">To aLice</BSButton>
+    </BSRow>  
+    <BSRow MarginBottom="Margins.Medium">
+        <BSImage Source="@qrSource" Class="img-fluid"></BSImage>
+    </BSRow>   
+}
+
+@code {
+    [Parameter]
+    public string? qrSource { get; set; }
+    
+    [Parameter]
+    public string? alice {get; set;}
+
+    [Parameter]
+    public bool isResult { get; set; }
+    
+    [Parameter]
+    public bool showSpinner { get; set; }
+    
+    private void OpenAlice()
+    {
+        if (alice != null) NavigationManager.NavigateTo(alice);
+    }
+}
