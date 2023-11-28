@@ -5,9 +5,9 @@ namespace aLice_utils.Shared.Models.Transaction;
 public class TransactionMeta: INotifyPropertyChanged
 {
     public string Deadline { get; set; } = "7200";
-    private string _networkType = "TestNet";
     public string FeeMultiplier { get; set; } = "100";
 
+    private string _networkType = "TestNet";
     public string NetworkType
     {
         get => _networkType;

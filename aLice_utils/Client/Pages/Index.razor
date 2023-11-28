@@ -1,6 +1,7 @@
 @page "/"
 @using BlazorStrap
 @using aLice_utils.Shared.Models
+@using Microsoft.AspNetCore.Components.Rendering
 
 <PageTitle>Generate</PageTitle>
 
@@ -15,7 +16,7 @@
 </BSInputGroup>
 
 @code {
-    string? SelectedOption = "AggregateCompleteTransaction";
+    string SelectedOption = "TransferTransaction";
     
     void HandleSelectionChange(ChangeEventArgs args)
     {
@@ -25,11 +26,54 @@
         }
     }
     
-    static RenderFragment BuildForm(string? transactionType) => builder =>
+    static RenderFragment BuildForm(string transactionType) => builder =>
     {
-        builder.OpenComponent(0, Type.GetType($"aLice_utils.Client.Components.TransactionForms.{transactionType}") ?? throw new InvalidOperationException());
-        builder.CloseComponent();
+        try
+        {
+            var transaction = CreateTransferInstance(transactionType);
+            var type = transaction.GetType();
+            builder.OpenComponent(0, Type.GetType($"aLice_utils.Client.Components.TransactionForms.TransactionForm") ?? throw new InvalidOperationException());
+            builder.AddAttribute(1, "Transaction", transaction);
+            void Body(RenderTreeBuilder bodyBuilder)
+            {
+                var innerTransactionProperty = type.GetProperty("InnerTransaction");
+                if (innerTransactionProperty == null) throw new Exception("InnerTransaction property is null");
+                var innerTransactionValue = innerTransactionProperty.GetValue(transaction);
+                bodyBuilder.OpenComponent(0, Type.GetType($"aLice_utils.Client.Components.TransactionForms.{transactionType}Body") ?? throw new InvalidOperationException());
+                bodyBuilder.AddAttribute(1, "InnerTransaction", innerTransactionValue);
+                bodyBuilder.CloseComponent();
+            }
+            builder.AddAttribute(2, "TransactionBody", (RenderFragment) Body);
+            builder.CloseComponent();
+        } 
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            Console.WriteLine(e.StackTrace);
+            builder.OpenElement(0, "div");
+            builder.AddContent(0, $"Transaction type {transactionType} is not implemented yet");
+            builder.CloseElement();
+        }
     };
+
+    static object CreateTransferInstance(string transactionType)
+    {
+        switch (transactionType)
+        {
+            case "TransferTransaction":
+            {
+                var type = new aLice_utils.Shared.Models.Transaction.TransferTransaction().GetType();
+                return Activator.CreateInstance(type) ?? throw new InvalidOperationException("Activator returned null");
+            }
+            case "MosaicDefinitionTransaction":
+            {
+                var type = new aLice_utils.Shared.Models.Transaction.MosaicDefinitionTransaction().GetType();
+                return Activator.CreateInstance(type) ?? throw new InvalidOperationException("Activator returned null");
+            }
+            default:
+                throw new Exception("Transaction type not implemented");
+        }
+    }
 }
 @BuildForm(SelectedOption)
 

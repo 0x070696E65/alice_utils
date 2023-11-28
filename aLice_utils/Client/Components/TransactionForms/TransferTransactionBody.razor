@@ -1,39 +1,41 @@
 @using BlazorStrap
 @using aLice_utils.Shared.Models
+@using aLice_utils.Shared.Models.Transaction
 <BSRow MarginBottom="Margins.Medium">
     <BSInputGroup>
         <span class="@BS.Input_Group_Text">SignerPublicKey</span>
-        <BSInput InputType="InputType.Text" placeholder="アカウントを指定しない場合は空欄で構いません" @bind-Value="InnerTransferTransaction.SignerPublicKey"/>
+        <BSInput InputType="InputType.Text" placeholder="アカウントを指定しない場合は空欄で構いません" @bind-Value="InnerTransaction.SignerPublicKey"/>
     </BSInputGroup>
-    <ValidationMessage For="@(() => InnerTransferTransaction.SignerPublicKey)" />
+    <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)" />
 </BSRow>
 <BSRow MarginBottom="Margins.Medium">
     <BSInputGroup>
         <span class="@BS.Input_Group_Text">RecipientAddress</span>
-        <BSInput InputType="InputType.Text" placeholder="Symbol Address" @bind-Value="InnerTransferTransaction.RecipientAddress"/>
+        <BSInput InputType="InputType.Text" placeholder="Symbol Address" @bind-Value="InnerTransaction.RecipientAddress"/>
     </BSInputGroup>
-    <ValidationMessage For="@(() => InnerTransferTransaction.RecipientAddress)" />
+    <ValidationMessage For="@(() => InnerTransaction.RecipientAddress)" />
 </BSRow>
 <BSRow MarginBottom="Margins.Medium">
     <BSInputGroup>
         <span class="@BS.Input_Group_Text">Message</span>
-        <BSInput InputType="InputType.TextArea" placeholder="Message" @bind-Value="InnerTransferTransaction.Message"/>
+        <BSInput InputType="InputType.TextArea" placeholder="Message" @bind-Value="InnerTransaction.Message"/>
     </BSInputGroup>
-    <ValidationMessage For="@(() => InnerTransferTransaction.Message)" />
+    <ValidationMessage For="@(() => InnerTransaction.Message)" />
 </BSRow>
 
-    <h5>Mosaics</h5>
+    <BSLabel Class="fw-bold small">Mosaics</BSLabel>
     @{
-        InnerTransferTransaction.Mosaics ??= new List<Mosaic>();
+        InnerTransaction.Mosaics ??= new List<Mosaic>();
     } 
     <BSRow MarginBottom="Margins.Medium">
-    @foreach (var mosaic in InnerTransferTransaction.Mosaics)
+    @foreach (var mosaic in InnerTransaction.Mosaics)
         {
-                <BSInputGroup>
-                    <BSInput InputType="InputType.Text" placeholder="Mosaic ID" @bind-Value="mosaic.Id"/>
-                    <BSInput InputType="InputType.Number" placeholder="Amount" @bind-Value="mosaic.Amount"/>
-                    <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveMosaic(mosaic)">-</BSButton>
-                </BSInputGroup>
+            <BSInputGroup>
+                <BSInput InputType="InputType.Text" placeholder="Mosaic ID" @bind-Value="mosaic.Id"/>
+                <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => SetCurrencyMosaicId(mosaic)">C</BSButton>
+                <BSInput InputType="InputType.Number" placeholder="Amount" @bind-Value="mosaic.Amount"/>
+                <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveMosaic(mosaic)">-</BSButton>
+            </BSInputGroup>
                 <ValidationMessage For=@(() => mosaic.Id) />
                 <ValidationMessage For=@(() => mosaic.Amount) />
         }
@@ -42,15 +44,24 @@
         <BSButton Color="BSColor.Primary" IsOutlined="true" OnClick="@AddMosaic">+</BSButton>
     </BSInputGroup>
 @code {
+
     [Parameter]
-    public aLice_utils.Shared.Models.Transaction.InnerTransferTransaction InnerTransferTransaction { get; set; } = new ();
+    public InnerTransferTransaction InnerTransaction { get; set; } = new ();
+
+    [Parameter]
+    public TransactionMeta TransactionMeta { get; set; } = new ();
     
     private void AddMosaic()
     {
-        InnerTransferTransaction.Mosaics.Add(new Mosaic("", ""));
+        InnerTransaction.Mosaics.Add(new Mosaic("", ""));
     }
     private void RemoveMosaic(Mosaic mosaic)
     {
-        InnerTransferTransaction.Mosaics.Remove(mosaic);
+        InnerTransaction.Mosaics.Remove(mosaic);
+    }
+
+    private void SetCurrencyMosaicId(Mosaic mosaic)
+    {
+        mosaic.Id = TransactionMeta.NetworkType == "MainNet" ? "6BED913FA20223F8" : "72C0212E67A08BCE";
     }
 }

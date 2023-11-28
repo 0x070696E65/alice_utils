@@ -1,13 +1,13 @@
-@*@using BlazorStrap
+@using BlazorStrap
 @using CatSdk.Utils
 @using BlazorStrap.Extensions.FluentValidation
 @using aLice_utils.Client.Services
 
-<h3>TransferTransaction</h3>
+<h3>MosaicDefinitionTransaction</h3>
 <BSForm Model="Transaction" OnValidSubmit="Submit">
-    <FluentValidator TValidator="Validator.TransferTransactionValidator" />
-    <TransactionHeader TransactionMeta="Transaction.TransactionMeta"/>
-    <TransferTransactionBody InnerTransaction="Transaction.InnerTransaction" TransactionMeta="Transaction.TransactionMeta" />
+    <FluentValidator TValidator="Validator.MosaicDefinitionTransactionValidator" />
+    <TransactionHeader TransactionMeta="Transaction.TransactionMeta"></TransactionHeader>
+    <MosaicDefinitionTransactionBody InnerTransaction="Transaction.InnerTransaction" TransactionMeta="Transaction.TransactionMeta"/>
     <BSInputGroup MarginBottom="Margins.Medium">
         <BSButton IsSubmit="true" Color="BSColor.Primary">Submit</BSButton>
     </BSInputGroup>
@@ -15,7 +15,7 @@
 <Result qrSource="@qrSource" alice="@alice" isResult="@isResult" showSpinner="@showSpinner"></Result>
 
 @code {
-    public readonly aLice_utils.Shared.Models.Transaction.TransferTransaction Transaction = new ();
+    public readonly aLice_utils.Shared.Models.Transaction.MosaicDefinitionTransaction Transaction = new ();
     private string? qrSource;
     string? alice;
     bool isResult;
@@ -32,4 +32,4 @@
         isResult = true;
         StateHasChanged();
     }
-}*@
+}

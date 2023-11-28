@@ -26,5 +26,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Shared\aLice_utils.Shared.csproj" />
   </ItemGroup>
-
 </Project>

@@ -7,10 +7,10 @@ namespace aLice_utils.Client.Extensions;
 
 public static class IRuleBuilder
 {
-    public static IRuleBuilderOptions<T, string> IsUnder1023Byte<T>(this IRuleBuilder<T, string> ruleBuilder)
+    public static IRuleBuilderOptions<T, string> IsUnderXByte<T>(this IRuleBuilder<T, string> ruleBuilder, int num)
     {
         return ruleBuilder
-            .Must((str) => Converter.Utf8ToBytes(str).Length < 1024)
+            .Must((str) => Converter.Utf8ToBytes(str).Length <= num)
             .WithMessage("メッセージは1023byte以下である必要があります。");
     }
     
@@ -28,7 +28,7 @@ public static class IRuleBuilder
             .WithMessage("正しいNodeのURLを入力してください。（ssl）");
     }
     
-    public static IRuleBuilderOptions<T, string> IsDeadline<T>(this IRuleBuilder<T, string> ruleBuilder)
+    public static IRuleBuilderOptions<T, string> IsOver<T>(this IRuleBuilder<T, string> ruleBuilder, int num)
     {
         return ruleBuilder
             .Must((str) =>
@@ -36,25 +36,41 @@ public static class IRuleBuilder
                 try
                 {
                     var t = int.Parse(str);
-                    return t is >= 10 and <= 7200;   
+                    return t >= num;
                 } catch {
                     return false;
                 }
             })
-            .WithMessage("Deadlineは10秒以上7200秒以下でなければいけません");
+            .WithMessage($"{num}以上でなければいけません");
     }
     
-    public static IRuleBuilderOptions<T, string> IsMosaicId16<T>(this IRuleBuilder<T, string> ruleBuilder)
+    public static IRuleBuilderOptions<T, string> IsUnder<T>(this IRuleBuilder<T, string> ruleBuilder, int num)
     {
         return ruleBuilder
-            .Must(id => id.Length == 16)
-            .WithMessage("モザイクIDは16文字でなければいけません");
+            .Must((str) =>
+            {
+                try
+                {
+                    var t = int.Parse(str);
+                    return t <= num;
+                } catch {
+                    return false;
+                }
+            })
+            .WithMessage($"{num}以下でなければいけません");
     }
-    public static IRuleBuilderOptions<T, string> IsMosaicIdHex<T>(this IRuleBuilder<T, string> ruleBuilder)
+    
+    public static IRuleBuilderOptions<T, string> IsXCharacters<T>(this IRuleBuilder<T, string> ruleBuilder, int num)
+    {
+        return ruleBuilder
+            .Must(id => id.Length == num)
+            .WithMessage($"{num}文字でなければいけません");
+    }
+    public static IRuleBuilderOptions<T, string> IsHex<T>(this IRuleBuilder<T, string> ruleBuilder)
     {
         return ruleBuilder
             .Must(Converter.IsHexString)
-            .WithMessage("モザイクIDは16進数でなければいけません");
+            .WithMessage("16進数でなければいけません");
     }
     
     public static IRuleBuilderOptions<T, string> IsSymbolAddress<T>(this IRuleBuilder<T, string> ruleBuilder)

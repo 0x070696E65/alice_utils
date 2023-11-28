@@ -1,13 +1,21 @@
-@*@using BlazorStrap
+@using BlazorStrap
 @using CatSdk.Utils
 @using BlazorStrap.Extensions.FluentValidation
 @using aLice_utils.Client.Services
+@using aLice_utils.Shared.Models.Transaction
 
-<h3>TransferTransaction</h3>
+<h3>@nameof(BaseTransaction)</h3>
+
 <BSForm Model="Transaction" OnValidSubmit="Submit">
-    <FluentValidator TValidator="Validator.TransferTransactionValidator" />
+    @if (Transaction is aLice_utils.Shared.Models.Transaction.TransferTransaction)
+    {
+        <FluentValidator TValidator="Validator.TransferTransactionValidator"/>
+    } else if (Transaction is aLice_utils.Shared.Models.Transaction.MosaicDefinitionTransaction)
+    {
+        <FluentValidator TValidator="Validator.MosaicDefinitionTransactionValidator"/>   
+    }
     <TransactionHeader TransactionMeta="Transaction.TransactionMeta"/>
-    <TransferTransactionBody InnerTransaction="Transaction.InnerTransaction" TransactionMeta="Transaction.TransactionMeta" />
+    @TransactionBody
     <BSInputGroup MarginBottom="Margins.Medium">
         <BSButton IsSubmit="true" Color="BSColor.Primary">Submit</BSButton>
     </BSInputGroup>
@@ -15,12 +23,17 @@
 <Result qrSource="@qrSource" alice="@alice" isResult="@isResult" showSpinner="@showSpinner"></Result>
 
 @code {
-    public readonly aLice_utils.Shared.Models.Transaction.TransferTransaction Transaction = new ();
+    [Parameter]
+    public required BaseTransaction Transaction { get; set; }
+    
+    [Parameter]
+    public required RenderFragment TransactionBody { get; set; }
+    
     private string? qrSource;
     string? alice;
     bool isResult;
     bool showSpinner;
-    
+
     private async void Submit()
     {
         showSpinner = true;
@@ -32,4 +45,4 @@
         isResult = true;
         StateHasChanged();
     }
-}*@
+}
