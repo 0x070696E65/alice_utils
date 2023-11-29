@@ -9,30 +9,23 @@
     </BSInputGroup>
     <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)" />
 </BSRow>
-<BSRow MarginBottom="Margins.Medium" MarginStart="Margins.ExtraSmall">
-    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.ADDRESS">
-        ADDRESS @InnerTransaction.RestrictionFlags.ADDRESS
-    </BSInputSwitch>
-    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.MOSAIC_ID">
-        MOSAIC_ID @InnerTransaction.RestrictionFlags.MOSAIC_ID
-    </BSInputSwitch>
-    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.TRANSACTION_TYPE">
-        TRANSACTION_TYPE @InnerTransaction.RestrictionFlags.TRANSACTION_TYPE
-    </BSInputSwitch>
-    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.OUTGOING">
-        OUTGOING @InnerTransaction.RestrictionFlags.OUTGOING
-    </BSInputSwitch>
-    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.BLOCK">
-        BLOCK @InnerTransaction.RestrictionFlags.BLOCK
-        </BSInputSwitch>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Restriction</span>
+        <BSInputCheckbox CheckedValue="@("OUTGOING")" @bind-Value="InnerTransaction.OUTGOING" UnCheckedValue="@("INCOMING")" IsToggle="true" Color="BSColor.Secondary">
+            @InnerTransaction.OUTGOING</BSInputCheckbox>
+        <BSInputCheckbox CheckedValue="@("ALLOW")" @bind-Value="InnerTransaction.BLOCK" UnCheckedValue="@("BLOCK")" IsToggle="true" Color="BSColor.Secondary">
+            @InnerTransaction.BLOCK</BSInputCheckbox>
+    </BSInputGroup>
 </BSRow>
+
 <BSRow MarginBottom="Margins.Medium">
     <BSLabel Class="fw-bold small">RestrictionAdditions</BSLabel>
     <BSRow MarginBottom="Margins.Medium">
         @foreach (var mosaic in InnerTransaction.RestrictionAdditions)
         {
             <BSInputGroup>
-                <BSInput InputType="InputType.Text" placeholder="Address" @bind-Value="mosaic.Mosaic"/>
+                <BSInput InputType="InputType.Text" placeholder="MosaicID" @bind-Value="mosaic.Mosaic"/>
                 <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveRestrictionAdditions(mosaic)">-</BSButton>
             </BSInputGroup>
             <ValidationMessage For=@(() => mosaic.Mosaic)/>

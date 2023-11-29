@@ -9,54 +9,62 @@
     </BSInputGroup>
     <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)" />
 </BSRow>
-<BSRow MarginBottom="Margins.Medium" MarginStart="Margins.ExtraSmall">
-    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.ADDRESS">
-        ADDRESS @InnerTransaction.RestrictionFlags.ADDRESS
-    </BSInputSwitch>
-    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.MOSAIC_ID">
-        MOSAIC_ID @InnerTransaction.RestrictionFlags.MOSAIC_ID
-    </BSInputSwitch>
-    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.TRANSACTION_TYPE">
-        TRANSACTION_TYPE @InnerTransaction.RestrictionFlags.TRANSACTION_TYPE
-    </BSInputSwitch>
-    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.OUTGOING">
-        OUTGOING @InnerTransaction.RestrictionFlags.OUTGOING
-    </BSInputSwitch>
-    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.BLOCK">
-        BLOCK @InnerTransaction.RestrictionFlags.BLOCK
-        </BSInputSwitch>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Restriction</span>
+        <BSInputCheckbox CheckedValue="@("ALLOW")" @bind-Value="InnerTransaction.BLOCK" UnCheckedValue="@("BLOCK")" IsToggle="true" Color="BSColor.Secondary">
+            @InnerTransaction.BLOCK</BSInputCheckbox>
+    </BSInputGroup>
 </BSRow>
 <BSRow MarginBottom="Margins.Medium">
     <BSLabel Class="fw-bold small">RestrictionAdditions</BSLabel>
-    <BSRow MarginBottom="Margins.Medium">
-        @foreach (var transaction in InnerTransaction.RestrictionAdditions)
-        {
+    <BSRow MarginBottom="Margins.Small">
+        <BSDropdown>
+            <Toggler><BSToggle IsButton="true" Color="BSColor.Secondary">Add Transaction</BSToggle></Toggler>
+            <Content>
+                @foreach (var option in TransactionTypeExtension.GetInnerTransactionTypeList())
+                {
+                    <BSDropdownItem OnClick="() => AddRestrictionAdditions(option)">@option</BSDropdownItem>
+                }
+            </Content>
+        </BSDropdown>`
+        </BSRow>
+    
+    @foreach (var transaction in InnerTransaction.RestrictionAdditions)
+    {
+        <BSRow MarginBottom="Margins.Small">
             <BSInputGroup>
-                <BSInput InputType="InputType.Text" placeholder="Address" @bind-Value="transaction.Transaction"/>
+                <BSInput InputType="InputType.Text" @bind-Value="transaction.Transaction" IsDisabled="true"/>
                 <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveRestrictionAdditions(transaction)">-</BSButton>
             </BSInputGroup>
             <ValidationMessage For=@(() => transaction.Transaction)/>
-        }
-    </BSRow>
-    <BSInputGroup MarginBottom="Margins.Medium">
-        <BSButton Color="BSColor.Primary" IsOutlined="true" OnClick="@AddRestrictionAdditions">+</BSButton>
-    </BSInputGroup>
+            </BSRow>
+    }
 </BSRow>
 <BSRow MarginBottom="Margins.Medium">
-    <BSLabel Class="fw-bold small">AddressDeletions</BSLabel>
-    <BSRow MarginBottom="Margins.Medium">
+    <BSLabel Class="fw-bold small">RestrictionDeletions</BSLabel>
+    <BSRow MarginBottom="Margins.Small">
+        <BSDropdown MarginBottom="Margins.Small">
+            <Toggler><BSToggle IsButton="true" Color="BSColor.Secondary">Add Transaction</BSToggle></Toggler>
+            <Content>
+                @foreach (var option in TransactionTypeExtension.GetInnerTransactionTypeList())
+                {
+                    <BSDropdownItem OnClick="() => AddRestrictionDeletions(option)">@option</BSDropdownItem>
+                }
+            </Content>
+        </BSDropdown>
+        </BSRow>
+        
         @foreach (var transaction in InnerTransaction.RestrictionDeletions)
         {
-            <BSInputGroup>
-                <BSInput InputType="InputType.Text" placeholder="Address" @bind-Value="transaction.Transaction"/>
-                <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveRestrictionDeletions(transaction)">-</BSButton>
-            </BSInputGroup>
-            <ValidationMessage For=@(() => transaction.Transaction)/>
+            <BSRow MarginBottom="Margins.Small">
+                <BSInputGroup>
+                    <BSInput InputType="InputType.Text" @bind-Value="transaction.Transaction" IsDisabled="true"/>
+                    <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveRestrictionDeletions(transaction)">-</BSButton>
+                </BSInputGroup>
+                <ValidationMessage For=@(() => transaction.Transaction)/>
+                </BSRow>
         }
-    </BSRow>
-    <BSInputGroup MarginBottom="Margins.Medium">
-        <BSButton Color="BSColor.Primary" IsOutlined="true" OnClick="@AddRestrictionDeletions">+</BSButton>
-    </BSInputGroup>
 </BSRow>
 @code {
     [Parameter]
@@ -65,19 +73,21 @@
     [Parameter]
     public TransactionMeta TransactionMeta { get; set; } = new ();
     
-    private void AddRestrictionAdditions()
+    private void AddRestrictionAdditions(string transactionType)
     {
-        InnerTransaction.RestrictionAdditions.Add(new TransactionClass());
+        InnerTransaction.RestrictionAdditions.Add(new TransactionClass(transactionType));
     }
+    
     private void RemoveRestrictionAdditions(TransactionClass transaction)
     {
         InnerTransaction.RestrictionAdditions.Remove(transaction);
     }
     
-    private void AddRestrictionDeletions()
+    private void AddRestrictionDeletions(string transactionType)
     {
-        InnerTransaction.RestrictionDeletions.Add(new TransactionClass());
+        InnerTransaction.RestrictionDeletions.Add(new TransactionClass(transactionType));
     }
+    
     private void RemoveRestrictionDeletions(TransactionClass transaction)
     {
         InnerTransaction.RestrictionDeletions.Remove(transaction);

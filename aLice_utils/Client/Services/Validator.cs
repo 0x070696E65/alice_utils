@@ -60,6 +60,7 @@ public abstract class Validator
     {
         public AccountKeyLinkTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.LinkedPublicKey).IsXCharacters(64).IsHex();
         }
     }
     
@@ -67,6 +68,7 @@ public abstract class Validator
     {
         public NodeKeyLinkTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.LinkedPublicKey).IsXCharacters(64).IsHex();
         }
     }
     
@@ -74,6 +76,9 @@ public abstract class Validator
     {
         public VotingKeyLinkTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.LinkedPublicKey).IsXCharacters(64).IsHex();
+            RuleFor(tranasction => tranasction.StartEpoch).IsOver(0);
+            RuleFor(tranasction => tranasction.EndEpoch).IsOver(0);
         }
     }
     
@@ -81,6 +86,7 @@ public abstract class Validator
     {
         public VrfKeyLinkTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.LinkedPublicKey).IsXCharacters(64).IsHex();
         }
     }
     
@@ -88,6 +94,8 @@ public abstract class Validator
     {
         public HashLockTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.Duration).IsOver(0);
+            RuleFor(tranasction => tranasction.Hash).IsXCharacters(64).NotEmpty().IsHex();
         }
     }
     
@@ -95,6 +103,10 @@ public abstract class Validator
     {
         public SecretLockTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.RecipientAddress).IsSymbolAddress();
+            RuleFor(tranasction => tranasction.Secret).IsXCharacters(64).NotEmpty().IsHex();
+            RuleFor(tranasction => tranasction.Duration).IsOver(0);
+            RuleFor(tranasction => tranasction.Mosaic).SetValidator(new MosaicValidator());
         }
     }
     
@@ -102,6 +114,9 @@ public abstract class Validator
     {
         public SecretProofTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.RecipientAddress).IsSymbolAddress();
+            RuleFor(tranasction => tranasction.Secret).IsXCharacters(64).NotEmpty().IsHex();
+            RuleFor(tranasction => tranasction.Proof).IsXCharacters(64).NotEmpty().IsHex();
         }
     }
     
@@ -109,6 +124,9 @@ public abstract class Validator
     {
         public AccountMetadataTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.TargetAddress).IsSymbolAddress();
+            RuleFor(tranasction => tranasction.ScopedMetadataKey).NotEmpty();
+            RuleFor(tranasction => tranasction.Value).IsUnderXByte(1024);
         }
     }
     
@@ -116,6 +134,10 @@ public abstract class Validator
     {
         public MosaicMetadataTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.TargetAddress).IsSymbolAddress();
+            RuleFor(tranasction => tranasction.TargetMosaicId).NotEmpty().IsXCharacters(16).IsHex();
+            RuleFor(tranasction => tranasction.ScopedMetadataKey).NotEmpty();
+            RuleFor(tranasction => tranasction.Value).IsUnderXByte(1024);
         }
     }
     
@@ -123,6 +145,10 @@ public abstract class Validator
     {
         public NamespaceMetadataTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.TargetAddress).IsSymbolAddress();
+            RuleFor(tranasction => tranasction.TargetNamespaceId).NotEmpty().IsXCharacters(16).IsHex();
+            RuleFor(tranasction => tranasction.ScopedMetadataKey).NotEmpty();
+            RuleFor(tranasction => tranasction.Value).IsUnderXByte(1024);
         }
     }
     
@@ -130,6 +156,10 @@ public abstract class Validator
     {
         public MultisigAccountModificationTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.MinRemovalDelta).IsOver(0);
+            RuleFor(tranasction => tranasction.MinApprovalDelta).IsOver(0);
+            RuleForEach(tranasction => tranasction.AddressAdditions).SetValidator(new SymbolAddressListValidator());
+            RuleForEach(tranasction => tranasction.AddressDeletions).SetValidator(new SymbolAddressListValidator());
         }
     }
     
@@ -137,6 +167,8 @@ public abstract class Validator
     {
         public AddressAliasTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.NamespaceId).IsHex().IsXCharacters(16);
+            RuleFor(tranasction => tranasction.Address).IsSymbolAddress();
         }
     }
     
@@ -144,6 +176,8 @@ public abstract class Validator
     {
         public MosaicAliasTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.NamespaceId).IsHex().IsXCharacters(16);
+            RuleFor(tranasction => tranasction.MosaicId).IsHex().IsXCharacters(16);
         }
     }
     
@@ -151,6 +185,8 @@ public abstract class Validator
     {
         public NamespaceRegistrationTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.Duration).IsOver(0);
+            RuleFor(tranasction => tranasction.Name).NotEmpty();
         }
     }
     
@@ -158,6 +194,8 @@ public abstract class Validator
     {
         public AccountAddressRestrictionTransactionValidator()
         {
+            RuleForEach(tranasction => tranasction.RestrictionAdditions).SetValidator(new SymbolAddressListValidator());
+            RuleForEach(tranasction => tranasction.RestrictionDeletions).SetValidator(new SymbolAddressListValidator());
         }
     }
     
@@ -165,6 +203,8 @@ public abstract class Validator
     {
         public AccountMosaicRestrictionTransactionValidator()
         {
+            RuleForEach(tranasction => tranasction.RestrictionAdditions).SetValidator(new SymbolMosaicListValidator());
+            RuleForEach(tranasction => tranasction.RestrictionDeletions).SetValidator(new SymbolMosaicListValidator());
         }
     }
     
@@ -179,6 +219,11 @@ public abstract class Validator
     {
         public MosaicAddressRestrictionTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.MosaicId).IsHex().IsXCharacters(16).NotEmpty();
+            RuleFor(tranasction => tranasction.RestrictionKey).NotEmpty();
+            RuleFor(tranasction => tranasction.PreviousRestrictionValue).NotEmpty().IsOver(0);
+            RuleFor(tranasction => tranasction.NewRestrictionValue).NotEmpty().IsOver(0);
+            RuleFor(tranasction => tranasction.TargetAddress).IsSymbolAddress();
         }
     }
     
@@ -186,6 +231,9 @@ public abstract class Validator
     {
         public MosaicGlobalRestrictionTransactionValidator()
         {
+            RuleFor(tranasction => tranasction.MosaicId).IsHex().IsXCharacters(16).NotEmpty();
+            RuleFor(tranasction => tranasction.RestrictionKey).NotEmpty();
+            RuleFor(tranasction => tranasction.NewRestrictionValue).NotEmpty().IsOver(0);
         }
     }
     
@@ -477,6 +525,22 @@ public abstract class Validator
         {
             RuleFor(mosaic => mosaic.Id).NotEmpty().IsXCharacters(16).IsHex();
             RuleFor(mosaic => mosaic.Amount).NotEmpty().IsOver(0);
+        }
+    }
+    
+    private class SymbolAddressListValidator : AbstractValidator<AddressClass>
+    {
+        public SymbolAddressListValidator()
+        {
+            RuleFor(address => address.Address).IsSymbolAddress();
+        }
+    }
+    
+    private class SymbolMosaicListValidator : AbstractValidator<MosaicClass>
+    {
+        public SymbolMosaicListValidator()
+        {
+            RuleFor(mosaic => mosaic.Mosaic).NotEmpty().IsHex().IsXCharacters(16);
         }
     }
 }

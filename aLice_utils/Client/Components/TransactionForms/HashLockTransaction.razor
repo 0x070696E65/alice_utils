@@ -10,14 +10,6 @@
 </BSRow>
 <BSRow MarginBottom="Margins.Medium">
     <BSInputGroup>
-        <BSInput InputType="InputType.Text" placeholder="Mosaic ID" @bind-Value="InnerTransaction.Mosaic.Id"/>
-        <BSInput InputType="InputType.Number" placeholder="Amount" @bind-Value="InnerTransaction.Mosaic.Amount"/>
-    </BSInputGroup>
-    <ValidationMessage For=@(() => InnerTransaction.Mosaic.Id) />
-    <ValidationMessage For=@(() => InnerTransaction.Mosaic.Amount) />
-</BSRow>
-<BSRow MarginBottom="Margins.Medium">
-    <BSInputGroup>
         <span class="@BS.Input_Group_Text">Duration</span>
         <BSInput InputType="InputType.Number" placeholder="Duration" @bind-Value="InnerTransaction.Duration"/>
     </BSInputGroup>
