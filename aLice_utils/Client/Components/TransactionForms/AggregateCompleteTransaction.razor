@@ -25,10 +25,27 @@
             @foreach (var transactionComponent in transactionComponents)
             {
                 <BSCard CardType="CardType.Card" MarginBottom="Margins.Medium" PaddingTop="Padding.Medium">
-                    <BSLabel Class="fw-bold">@transactionComponent.Keys.First()</BSLabel>
-                    @transactionComponent.Values.First()
+                    <BSLabel Class="fw-bold">@GenerateKey(transactionComponent.Key)</BSLabel>
+                    @transactionComponent.Value
+                    <BSCol MarginBottom="Margins.Medium" Column="3">
+                        <BSButton Color="BSColor.Danger" IsOutlined="true" OnClick="() => RemoveTransaction(transactionComponent.Key)">-</BSButton>
+                    </BSCol>
                 </BSCard>
             }
+    </BSRow>
+    
+    <BSRow MarginBottom="Margins.Medium">
+        <BSInputGroup>
+            <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="Transaction.IsAnnounce">
+                Announce @Transaction.IsAnnounce</BSInputSwitch>
+        </BSInputGroup>
+    </BSRow>
+    <BSRow MarginBottom="Margins.Medium">
+        <BSInputGroup>
+            <span class="@BS.Input_Group_Text">CosignatureCount</span>
+            <BSInput InputType="InputType.Number" placeholder="CosignatureCount" @bind-Value="Transaction.CosignatureCount"/>
+        </BSInputGroup>
+        <ValidationMessage For="@(() => Transaction.CosignatureCount)" />
     </BSRow>
     
     <BSInputGroup MarginBottom="Margins.Medium">
@@ -39,7 +56,7 @@
 
 @code {
     public readonly aLice_utils.Shared.Models.Transaction.AggregateCompleteTransaction Transaction = new ();
-    private readonly List<Dictionary<string, RenderFragment>> transactionComponents = new ();
+    private readonly Dictionary<string, RenderFragment> transactionComponents = new ();
     private int componentCounter;
     
     private string? qrSource;
@@ -49,19 +66,23 @@
 
     private void AddTransaction(string option)
     {
-        var transactionComponent = CreateTransactionComponent(option);
-        transactionComponents.Add(new Dictionary<string, RenderFragment>()
-        {
-            {option, transactionComponent}
-        });
+        var uniqueKey = GenerateUniqueKey(option);
+        var transactionComponent = CreateTransactionComponent(option, uniqueKey);
+        transactionComponents.Add(uniqueKey, transactionComponent);
     }
     
-    private RenderFragment CreateTransactionComponent(string option)
+    private void RemoveTransaction(string key)
+    {
+        transactionComponents.Remove(key);
+        Transaction.Transactions.Remove(key);
+    }
+    
+    private RenderFragment CreateTransactionComponent(string option, string uniqueKey)
     {
         componentCounter++;
         var localCounter = componentCounter;
         var tx = (IInnerTransaction)SymbolBuilderService.CreateTransactionInstance(option, true);
-        Transaction.Transactions.Add(tx);
+        Transaction.Transactions.Add(uniqueKey, tx);
         
         return builder =>
         {
@@ -85,13 +106,25 @@
     {
         showSpinner = true;
         var aggTx = SymbolBuilderService.BuildTransaction(Transaction);
-        TransactionHelper.SetMaxFee(aggTx, int.Parse(Transaction.TransactionMeta.FeeMultiplier));
-        
-        alice = $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(aggTx.Serialize())}&deadline={Transaction.TransactionMeta.Deadline}&method=announce&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}";
+        TransactionHelper.SetMaxFee(aggTx, int.Parse(Transaction.TransactionMeta.FeeMultiplier), Transaction.CosignatureCount);
+
+        alice = Transaction.IsAnnounce == "true" 
+            ? $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(aggTx.Serialize())}&deadline={Transaction.TransactionMeta.Deadline}&method=announce&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}" 
+            : $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(aggTx.Serialize())}&deadline={Transaction.TransactionMeta.Deadline}";
         qrSource = await QRServices.GenerateQR(alice);
         
         showSpinner = false;
         isResult = true;
         StateHasChanged();
+    }
+    
+    private static string GenerateUniqueKey(string option)
+    {
+        return $"{option}_{DateTime.Now.Ticks}";
+    }
+    
+    private static string GenerateKey(string uniqueKey)
+    {
+        return uniqueKey.Split("_")[0];
     }
 }

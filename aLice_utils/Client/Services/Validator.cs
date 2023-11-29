@@ -360,7 +360,7 @@ public abstract class Validator
     {
         public AggregateCompleteTransactionValidator()
         {
-            RuleForEach(transaction => transaction.Transactions).SetValidator(new InnerTransactionValidator());
+            RuleForEach(transaction => transaction.Transactions.Values).SetValidator(new InnerTransactionValidator());
         }
     }
     

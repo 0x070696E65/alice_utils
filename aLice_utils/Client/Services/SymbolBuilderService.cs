@@ -170,9 +170,9 @@ public abstract class SymbolBuilderService
         
         foreach (var t in Transaction.Transactions)
         {
-            if (t.GetType() == typeof(InnerTransferTransaction))
+            if (t.Value.GetType() == typeof(InnerTransferTransaction))
             {
-                if(t is not InnerTransferTransaction innerTx) continue;
+                if(t.Value is not InnerTransferTransaction innerTx) continue;
                 var innerTransferTranasction = new EmbeddedTransferTransactionV1
                 {
                     Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? CatSdk.Symbol.NetworkType.MAINNET : CatSdk.Symbol.NetworkType.TESTNET
