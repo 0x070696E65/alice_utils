@@ -3,7 +3,7 @@ namespace aLice_utils.Shared.Models.Transaction;
 public class InnerAccountMosaicRestrictionTransaction: IInnerTransaction
 {
     public string SignerPublicKey { get; set; } = "";
-    public List<string> RestrictionFlags { get; set; } = new();
-    public List<string> RestrictionAdditions { get; set; } = new();
-    public List<string> RestrictionDeletions { get; set; } = new();
+    public RestrictionFlags RestrictionFlags { get; set; } = new();
+    public List<MosaicClass> RestrictionAdditions { get; set; } = new();
+    public List<MosaicClass> RestrictionDeletions { get; set; } = new();
 }

@@ -1,0 +1,39 @@
+@using BlazorStrap
+@using aLice_utils.Shared.Models.Transaction
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SignerPublicKey</span>
+        <BSInput InputType="InputType.Text" placeholder="空欄の場合はaLiceアカウント" @bind-Value="InnerTransaction.SignerPublicKey"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <BSInput InputType="InputType.Text" placeholder="Mosaic ID" @bind-Value="InnerTransaction.Mosaic.Id"/>
+        <BSInput InputType="InputType.Number" placeholder="Amount" @bind-Value="InnerTransaction.Mosaic.Amount"/>
+    </BSInputGroup>
+    <ValidationMessage For=@(() => InnerTransaction.Mosaic.Id) />
+    <ValidationMessage For=@(() => InnerTransaction.Mosaic.Amount) />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Duration</span>
+        <BSInput InputType="InputType.Number" placeholder="Duration" @bind-Value="InnerTransaction.Duration"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.Duration)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Hash</span>
+        <BSInput InputType="InputType.Text" placeholder="Hash" @bind-Value="InnerTransaction.Hash"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.Hash)" />
+</BSRow>
+@code {
+    [Parameter]
+    public InnerHashLockTransaction InnerTransaction { get; set; } = new ();
+    
+    [Parameter]
+    public TransactionMeta TransactionMeta { get; set; } = new ();
+}

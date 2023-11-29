@@ -5,7 +5,8 @@
 @using aLice_utils.Shared.Models
 @using aLice_utils.Shared.Models.Transaction
 
-<h3>AggregateCompleteTransaction</h3>
+<BSLabel Class="fw-bold" Size="Size.ExtraLarge">AggregateCompleteTransaction</BSLabel>
+
 <BSForm Model="Transaction" OnValidSubmit="Submit">
     <FluentValidator TValidator="Validator.AggregateCompleteTransactionValidator" />
     <TransactionHeader TransactionMeta="Transaction.TransactionMeta"></TransactionHeader>
@@ -59,16 +60,8 @@
     {
         componentCounter++;
         var localCounter = componentCounter;
-        IInnerTransaction? tx = null;
-        if (option == "TransferTransaction")
-        {
-            tx = new InnerTransferTransaction();
-            Transaction.Transactions.Add(tx);
-        } else if (option == "MosaicDefinitionTransaction")
-        {
-            tx = new InnerMosaicDefinitionTransaction();
-            Transaction.Transactions.Add(tx);
-        }
+        var tx = (IInnerTransaction)SymbolBuilderService.CreateTransactionInstance(option, true);
+        Transaction.Transactions.Add(tx);
         
         return builder =>
         {

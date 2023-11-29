@@ -1,0 +1,46 @@
+@using BlazorStrap
+@using aLice_utils.Shared.Models.Transaction
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SignerPublicKey</span>
+        <BSInput InputType="InputType.Text" placeholder="空欄の場合はaLiceアカウント" @bind-Value="InnerTransaction.SignerPublicKey"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">LinkedPublicKey</span>
+        <BSInput InputType="InputType.Text" placeholder="LinkedPublicKey" @bind-Value="InnerTransaction.LinkedPublicKey"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.LinkedPublicKey)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">LinkAction</span>
+        <BSInputCheckbox CheckedValue="@("LINK")" @bind-Value="InnerTransaction.LinkAction" UnCheckedValue="@("UNLINK")" IsToggle="true" Color="BSColor.Secondary">
+            @InnerTransaction.LinkAction
+        </BSInputCheckbox>
+    </BSInputGroup>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">StartEpoch</span>
+        <BSInput InputType="InputType.Number" placeholder="StartEpoch" @bind-Value="InnerTransaction.StartEpoch"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.StartEpoch)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">EndEpoch</span>
+        <BSInput InputType="InputType.Number" placeholder="EndEpoch" @bind-Value="InnerTransaction.EndEpoch"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.EndEpoch)" />
+</BSRow>
+@code {
+    [Parameter]
+    public InnerVotingKeyLinkTransaction InnerTransaction { get; set; } = new ();
+    
+    [Parameter]
+    public TransactionMeta TransactionMeta { get; set; } = new ();
+}

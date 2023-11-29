@@ -5,7 +5,7 @@
 <BSRow MarginBottom="Margins.Medium">
     <BSInputGroup>
         <span class="@BS.Input_Group_Text">SignerPublicKey</span>
-        <BSInput InputType="InputType.Text" placeholder="アカウントを指定しない場合は空欄で構いません" @bind-Value="InnerTransaction.SignerPublicKey"/>
+        <BSInput InputType="InputType.Text" placeholder="空欄の場合はaLiceアカウント" @bind-Value="InnerTransaction.SignerPublicKey"/>
     </BSInputGroup>
     <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)"/>
 </BSRow>
@@ -26,9 +26,6 @@
 
 <BSRow MarginBottom="Margins.Medium">
     <BSLabel Class="fw-bold small">Mosaics</BSLabel>
-    @{
-        InnerTransaction.Mosaics ??= new List<Mosaic>();
-    }
     <BSRow MarginBottom="Margins.Medium">
         @foreach (var mosaic in InnerTransaction.Mosaics)
         {

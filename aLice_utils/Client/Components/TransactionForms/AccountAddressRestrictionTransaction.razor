@@ -1,0 +1,85 @@
+@using BlazorStrap
+@using aLice_utils.Shared.Models.Transaction
+@using aLice_utils.Shared.Models
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SignerPublicKey</span>
+        <BSInput InputType="InputType.Text" placeholder="空欄の場合はaLiceアカウント" @bind-Value="InnerTransaction.SignerPublicKey"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium" MarginStart="Margins.ExtraSmall">
+    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.ADDRESS">
+        ADDRESS @InnerTransaction.RestrictionFlags.ADDRESS
+    </BSInputSwitch>
+    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.MOSAIC_ID">
+        MOSAIC_ID @InnerTransaction.RestrictionFlags.MOSAIC_ID
+    </BSInputSwitch>
+    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.TRANSACTION_TYPE">
+        TRANSACTION_TYPE @InnerTransaction.RestrictionFlags.TRANSACTION_TYPE
+    </BSInputSwitch>
+    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.OUTGOING">
+        OUTGOING @InnerTransaction.RestrictionFlags.OUTGOING
+    </BSInputSwitch>
+    <BSInputSwitch CheckedValue="@("true")" UnCheckedValue="@("false")" @bind-Value="InnerTransaction.RestrictionFlags.BLOCK">
+        BLOCK @InnerTransaction.RestrictionFlags.BLOCK
+        </BSInputSwitch>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSLabel Class="fw-bold small">RestrictionAdditions</BSLabel>
+    <BSRow MarginBottom="Margins.Medium">
+        @foreach (var address in InnerTransaction.RestrictionAdditions)
+        {
+            <BSInputGroup>
+                <BSInput InputType="InputType.Text" placeholder="Address" @bind-Value="address.Address"/>
+                <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveRestrictionAdditions(address)">-</BSButton>
+            </BSInputGroup>
+            <ValidationMessage For=@(() => address.Address)/>
+        }
+    </BSRow>
+    <BSInputGroup MarginBottom="Margins.Medium">
+        <BSButton Color="BSColor.Primary" IsOutlined="true" OnClick="@AddRestrictionAdditions">+</BSButton>
+    </BSInputGroup>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSLabel Class="fw-bold small">AddressDeletions</BSLabel>
+    <BSRow MarginBottom="Margins.Medium">
+        @foreach (var address in InnerTransaction.RestrictionDeletions)
+        {
+            <BSInputGroup>
+                <BSInput InputType="InputType.Text" placeholder="Address" @bind-Value="address.Address"/>
+                <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveRestrictionDeletions(address)">-</BSButton>
+            </BSInputGroup>
+            <ValidationMessage For=@(() => address.Address)/>
+        }
+    </BSRow>
+    <BSInputGroup MarginBottom="Margins.Medium">
+        <BSButton Color="BSColor.Primary" IsOutlined="true" OnClick="@AddRestrictionDeletions">+</BSButton>
+    </BSInputGroup>
+</BSRow>
+@code {
+    [Parameter]
+    public InnerAccountAddressRestrictionTransaction InnerTransaction { get; set; } = new ();
+    
+    [Parameter]
+    public TransactionMeta TransactionMeta { get; set; } = new ();
+    
+    private void AddRestrictionAdditions()
+    {
+        InnerTransaction.RestrictionAdditions.Add(new AddressClass());
+    }
+    private void RemoveRestrictionAdditions(AddressClass address)
+    {
+        InnerTransaction.RestrictionAdditions.Remove(address);
+    }
+    
+    private void AddRestrictionDeletions()
+    {
+        InnerTransaction.RestrictionDeletions.Add(new AddressClass());
+    }
+    private void RemoveRestrictionDeletions(AddressClass address)
+    {
+        InnerTransaction.RestrictionDeletions.Remove(address);
+    }
+}

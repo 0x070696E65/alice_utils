@@ -24,6 +24,13 @@
 </BSRow>
 <BSRow MarginBottom="Margins.Medium">
     <BSInputGroup>
+        <span class="@BS.Input_Group_Text">NamespaceId</span>
+        <BSInput InputType="InputType.Text" placeholder="NamespaceId" @bind-Value="InnerTransaction.TargetNamespaceId"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.TargetNamespaceId)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
         <span class="@BS.Input_Group_Text">Value</span>
         <BSInput InputType="InputType.TextArea" placeholder="Value" @bind-Value="InnerTransaction.Value"/>
     </BSInputGroup>
@@ -31,7 +38,7 @@
 </BSRow>
 @code {
     [Parameter]
-    public InnerAccountMetadataTransaction InnerTransaction { get; set; } = new ();
+    public InnerNamespaceMetadataTransaction InnerTransaction { get; set; } = new ();
     
     [Parameter]
     public TransactionMeta TransactionMeta { get; set; } = new ();

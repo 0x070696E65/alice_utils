@@ -8,35 +8,95 @@ namespace aLice_utils.Client.Services;
 
 public abstract class SymbolBuilderService
 {
+    private static readonly Dictionary<string, Func<object>> TransactionInstanceBuilders = new()
+    {
+        { "TransferTransaction", () => new TransferTransaction() },
+        { "MosaicDefinitionTransaction", () => new MosaicDefinitionTransaction() },
+        { "MosaicSupplyChangeTransaction", () => new MosaicSupplyChangeTransaction() },
+        { "MosaicSupplyRevocationTransaction", () => new MosaicSupplyRevocationTransaction() },
+        { "AccountKeyLinkTransaction", () => new AccountKeyLinkTransaction() },
+        { "NodeKeyLinkTransaction", () => new NodeKeyLinkTransaction() },
+        { "VotingKeyLinkTransaction", () => new VotingKeyLinkTransaction() },
+        { "VrfKeyLinkTransaction", () => new VrfKeyLinkTransaction() },
+        { "HashLockTransaction", () => new HashLockTransaction() },
+        { "SecretLockTransaction", () => new SecretLockTransaction() },
+        { "SecretProofTransaction", () => new SecretProofTransaction() },
+        { "AccountMetadataTransaction", () => new AccountMetadataTransaction() },
+        { "MosaicMetadataTransaction", () => new MosaicMetadataTransaction() },
+        { "NamespaceMetadataTransaction", () => new NamespaceMetadataTransaction() },
+        { "MultisigAccountModificationTransaction", () => new MultisigAccountModificationTransaction() },
+        { "AddressAliasTransaction", () => new AddressAliasTransaction() },
+        { "MosaicAliasTransaction", () => new MosaicAliasTransaction() },
+        { "NamespaceRegistrationTransaction", () => new NamespaceRegistrationTransaction() },
+        { "AccountAddressRestrictionTransaction", () => new AccountAddressRestrictionTransaction() },
+        { "AccountMosaicRestrictionTransaction", () => new AccountMosaicRestrictionTransaction() },
+        { "AccountOperationRestrictionTransaction", () => new AccountOperationRestrictionTransaction() },
+        { "MosaicAddressRestrictionTransaction", () => new MosaicAddressRestrictionTransaction() },
+        { "MosaicGlobalRestrictionTransaction", () => new MosaicGlobalRestrictionTransaction() },
+    };
+    
+    private static readonly Dictionary<string, Func<object>> InnerTransactionInstanceBuilders = new()
+    {
+        { "TransferTransaction", () => new InnerTransferTransaction() },
+        { "MosaicDefinitionTransaction", () => new InnerMosaicDefinitionTransaction() },
+        { "MosaicSupplyChangeTransaction", () => new InnerMosaicSupplyChangeTransaction() },
+        { "MosaicSupplyRevocationTransaction", () => new InnerMosaicSupplyRevocationTransaction() },
+        { "AccountKeyLinkTransaction", () => new InnerAccountKeyLinkTransaction() },
+        { "NodeKeyLinkTransaction", () => new InnerNodeKeyLinkTransaction() },
+        { "VotingKeyLinkTransaction", () => new InnerVotingKeyLinkTransaction() },
+        { "VrfKeyLinkTransaction", () => new InnerVrfKeyLinkTransaction() },
+        { "HashLockTransaction", () => new InnerHashLockTransaction() },
+        { "SecretLockTransaction", () => new InnerSecretLockTransaction() },
+        { "SecretProofTransaction", () => new InnerSecretProofTransaction() },
+        { "AccountMetadataTransaction", () => new InnerAccountMetadataTransaction() },
+        { "MosaicMetadataTransaction", () => new InnerMosaicMetadataTransaction() },
+        { "NamespaceMetadataTransaction", () => new InnerNamespaceMetadataTransaction() },
+        { "MultisigAccountModificationTransaction", () => new InnerMultisigAccountModificationTransaction() },
+        { "AddressAliasTransaction", () => new InnerAddressAliasTransaction() },
+        { "MosaicAliasTransaction", () => new InnerMosaicAliasTransaction() },
+        { "NamespaceRegistrationTransaction", () => new InnerNamespaceRegistrationTransaction() },
+        { "AccountAddressRestrictionTransaction", () => new InnerAccountAddressRestrictionTransaction() },
+        { "AccountMosaicRestrictionTransaction", () => new InnerAccountMosaicRestrictionTransaction() },
+        { "AccountOperationRestrictionTransaction", () => new InnerAccountOperationRestrictionTransaction() },
+        { "MosaicAddressRestrictionTransaction", () => new InnerMosaicAddressRestrictionTransaction() },
+        { "MosaicGlobalRestrictionTransaction", () => new InnerMosaicGlobalRestrictionTransaction() },
+    };
+
+    private static readonly Dictionary<Type, Func<BaseTransaction, ITransaction>> TransactionBuilders = new()
+    {
+        { typeof(TransferTransaction), t => BuildTransferTransaction((TransferTransaction)t) },
+        { typeof(MosaicDefinitionTransaction), t => BuildMosaicDefinitionTransaction((MosaicDefinitionTransaction)t) },
+        { typeof(MosaicSupplyChangeTransaction), t => BuildMosaicSupplyChangeTransaction((MosaicSupplyChangeTransaction)t) },
+        { typeof(AggregateCompleteTransaction), t => BuildAggregateCompleteTransaction((AggregateCompleteTransaction)t) },
+    };
+
+    public static object CreateTransactionInstance(string transactionType, bool isInnerTransaction = false)
+    {
+        if (isInnerTransaction)
+        {
+            if (InnerTransactionInstanceBuilders.TryGetValue(transactionType, out var createFunction))
+            {
+                return createFunction();
+            }
+        }
+        else
+        {
+            if (TransactionInstanceBuilders.TryGetValue(transactionType, out var createFunction))
+            {
+                return createFunction();
+            }   
+        }
+        throw new Exception("Transaction type not implemented");
+    }
+
     public static ITransaction BuildTransaction(BaseTransaction transaction)
     {
-        if (transaction.GetType() == typeof(TransferTransaction))
+        if (TransactionBuilders.TryGetValue(transaction.GetType(), out var buildFunction))
         {
-            if (transaction is TransferTransaction t)
-            {
-                return BuildTransferTransaction(t);
-            }
-        } else if (transaction.GetType() == typeof(MosaicDefinitionTransaction))
-        {
-            if (transaction is MosaicDefinitionTransaction t)
-            {
-                return BuildMosaicDefinitionTransaction(t);
-            }
-        } else if (transaction.GetType() == typeof(MosaicSupplyChangeTransaction))
-        {
-            if (transaction is MosaicSupplyChangeTransaction t)
-            {
-                return BuildMosaicSupplyChangeTransaction(t);
-            }
+            return buildFunction(transaction);
         }
-        else if (transaction.GetType() == typeof(AggregateCompleteTransaction))
-        {
-            if (transaction is AggregateCompleteTransaction t)
-            {
-                return BuildAggregateCompleteTransaction(t);
-            }
-        }
-        throw new Exception("transaction is not defined.");
+
+        throw new Exception("Transaction type not defined.");
     }
     
     private static TransferTransactionV1 BuildTransferTransaction(TransferTransaction Transaction)

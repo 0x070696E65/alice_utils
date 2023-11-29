@@ -1,0 +1,82 @@
+@using BlazorStrap
+@using aLice_utils.Shared.Models.Transaction
+@using aLice_utils.Shared.Models
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SignerPublicKey</span>
+        <BSInput InputType="InputType.Text" placeholder="空欄の場合はaLiceアカウント" @bind-Value="InnerTransaction.SignerPublicKey"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">MinRemovalDelta</span>
+        <BSInput InputType="InputType.Number" placeholder="MinRemovalDelta" @bind-Value="InnerTransaction.MinRemovalDelta"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.MinRemovalDelta)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">MinApprovalDelta</span>
+        <BSInput InputType="InputType.Number" placeholder="MinApprovalDelta" @bind-Value="InnerTransaction.MinApprovalDelta"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.MinApprovalDelta)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSLabel Class="fw-bold small">AddressAdditions</BSLabel>
+    <BSRow MarginBottom="Margins.Medium">
+        @foreach (var address in InnerTransaction.AddressAdditions)
+        {
+            <BSInputGroup>
+                <BSInput InputType="InputType.Text" placeholder="Address" @bind-Value="address.Address"/>
+                <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveAddressAdditions(address)">-</BSButton>
+            </BSInputGroup>
+            <ValidationMessage For=@(() => address.Address)/>
+        }
+    </BSRow>
+    <BSInputGroup MarginBottom="Margins.Medium">
+        <BSButton Color="BSColor.Primary" IsOutlined="true" OnClick="@AddAddressAdditions">+</BSButton>
+    </BSInputGroup>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSLabel Class="fw-bold small">AddressDeletions</BSLabel>
+    <BSRow MarginBottom="Margins.Medium">
+        @foreach (var address in InnerTransaction.AddressDeletions)
+        {
+            <BSInputGroup>
+                <BSInput InputType="InputType.Text" placeholder="Address" @bind-Value="address.Address"/>
+                <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveAddressDeletions(address)">-</BSButton>
+            </BSInputGroup>
+            <ValidationMessage For=@(() => address.Address)/>
+        }
+    </BSRow>
+    <BSInputGroup MarginBottom="Margins.Medium">
+        <BSButton Color="BSColor.Primary" IsOutlined="true" OnClick="@AddAddressDeletions">+</BSButton>
+    </BSInputGroup>
+</BSRow>
+@code {
+    [Parameter]
+    public InnerMultisigAccountModificationTransaction InnerTransaction { get; set; } = new ();
+    
+    [Parameter]
+    public TransactionMeta TransactionMeta { get; set; } = new ();
+    
+    private void AddAddressAdditions()
+    {
+        InnerTransaction.AddressAdditions.Add(new AddressClass());
+    }
+    private void RemoveAddressAdditions(AddressClass address)
+    {
+        InnerTransaction.AddressAdditions.Remove(address);
+    }
+    
+    private void AddAddressDeletions()
+    {
+        InnerTransaction.AddressDeletions.Add(new AddressClass());
+    }
+    private void RemoveAddressDeletions(AddressClass address)
+    {
+        InnerTransaction.AddressDeletions.Remove(address);
+    }
+}

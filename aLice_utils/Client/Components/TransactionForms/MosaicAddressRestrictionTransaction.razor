@@ -1,0 +1,53 @@
+@using BlazorStrap
+@using aLice_utils.Shared.Models.Transaction
+@using aLice_utils.Shared.Models
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SignerPublicKey</span>
+        <BSInput InputType="InputType.Text" placeholder="空欄の場合はaLiceアカウント" @bind-Value="InnerTransaction.SignerPublicKey"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">MosaicId</span>
+        <BSInput InputType="InputType.Text" placeholder="MosaicId" @bind-Value="InnerTransaction.MosaicId"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.MosaicId)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">RestrictionKey</span>
+        <BSInput InputType="InputType.Text" placeholder="RestrictionKey" @bind-Value="InnerTransaction.RestrictionKey"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.RestrictionKey)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">TargetAddress</span>
+        <BSInput InputType="InputType.Text" placeholder="TargetAddress" @bind-Value="InnerTransaction.TargetAddress"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.TargetAddress)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">PreviousRestrictionValue</span>
+        <BSInput InputType="InputType.Number" placeholder="PreviousRestrictionValue" @bind-Value="InnerTransaction.PreviousRestrictionValue"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.PreviousRestrictionValue)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">NewRestrictionValue</span>
+        <BSInput InputType="InputType.Number" placeholder="NewRestrictionValue" @bind-Value="InnerTransaction.NewRestrictionValue"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.NewRestrictionValue)" />
+</BSRow>
+@code {
+    [Parameter]
+    public InnerMosaicAddressRestrictionTransaction InnerTransaction { get; set; } = new ();
+    
+    [Parameter]
+    public TransactionMeta TransactionMeta { get; set; } = new ();
+}

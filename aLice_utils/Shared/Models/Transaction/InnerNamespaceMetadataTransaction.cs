@@ -6,6 +6,5 @@ public class InnerNamespaceMetadataTransaction: IInnerTransaction
     public string TargetAddress { get; set; } = "";
     public string TargetNamespaceId { get; set; } = "";
     public string ScopedMetadataKey { get; set; } = "";
-    public string ValueSizeDelta { get; set; } = "0";
     public string Value { get; set; } = "";
 }

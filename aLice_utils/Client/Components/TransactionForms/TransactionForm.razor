@@ -4,7 +4,7 @@
 @using aLice_utils.Client.Services
 @using aLice_utils.Shared.Models.Transaction
 
-<h3>@Transaction.GetType().Name</h3>
+<BSLabel Class="fw-bold" Size="Size.ExtraLarge">@Transaction.GetType().Name</BSLabel>
 
 <BSForm Model="Transaction" OnValidSubmit="Submit">
     <FluentValidator TValidator="Validator.TransactionValidator"/>
