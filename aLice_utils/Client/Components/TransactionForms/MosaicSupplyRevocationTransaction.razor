@@ -1,0 +1,32 @@
+@using BlazorStrap
+@using aLice_utils.Shared.Models.Transaction
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SignerPublicKey</span>
+        <BSInput InputType="InputType.Text" placeholder="空欄の場合はモザイク作成者の要署名" @bind-Value="InnerTransaction.SignerPublicKey"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SourceAddress</span>
+        <BSInput InputType="InputType.Text" placeholder="Symbol Address" @bind-Value="InnerTransaction.SourceAddress"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.SourceAddress)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <BSInput InputType="InputType.Text" placeholder="Mosaic ID" @bind-Value="InnerTransaction.Mosaic.Id"/>
+        <BSInput InputType="InputType.Number" placeholder="Amount" @bind-Value="InnerTransaction.Mosaic.Amount"/>
+    </BSInputGroup>
+    <ValidationMessage For=@(() => InnerTransaction.Mosaic.Id) />
+    <ValidationMessage For=@(() => InnerTransaction.Mosaic.Amount) />
+</BSRow>
+@code {
+    [Parameter]
+    public InnerMosaicSupplyRevocationTransaction InnerTransaction { get; set; } = new ();
+    
+    [Parameter]
+    public TransactionMeta TransactionMeta { get; set; } = new ();
+}

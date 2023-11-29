@@ -30,21 +30,29 @@
     {
         try
         {
-            var transaction = CreateTransferInstance(transactionType);
-            var type = transaction.GetType();
-            builder.OpenComponent(0, Type.GetType($"aLice_utils.Client.Components.TransactionForms.TransactionForm") ?? throw new InvalidOperationException());
-            builder.AddAttribute(1, "Transaction", transaction);
-            void Body(RenderTreeBuilder bodyBuilder)
+            if (transactionType  == "AggregateCompleteTransaction")
             {
-                var innerTransactionProperty = type.GetProperty("InnerTransaction");
-                if (innerTransactionProperty == null) throw new Exception("InnerTransaction property is null");
-                var innerTransactionValue = innerTransactionProperty.GetValue(transaction);
-                bodyBuilder.OpenComponent(0, Type.GetType($"aLice_utils.Client.Components.TransactionForms.{transactionType}Body") ?? throw new InvalidOperationException());
-                bodyBuilder.AddAttribute(1, "InnerTransaction", innerTransactionValue);
-                bodyBuilder.CloseComponent();
+                builder.OpenComponent(0, Type.GetType($"aLice_utils.Client.Components.TransactionForms.AggregateCompleteTransaction") ?? throw new InvalidOperationException());
+                builder.CloseComponent();
             }
-            builder.AddAttribute(2, "TransactionBody", (RenderFragment) Body);
-            builder.CloseComponent();
+            else
+            {
+                var transaction = CreateTransferInstance(transactionType);
+                var type = transaction.GetType();
+                builder.OpenComponent(0, Type.GetType($"aLice_utils.Client.Components.TransactionForms.TransactionForm") ?? throw new InvalidOperationException());
+                builder.AddAttribute(1, "Transaction", transaction);
+                void Body(RenderTreeBuilder bodyBuilder)
+                {
+                    var innerTransactionProperty = type.GetProperty("InnerTransaction");
+                    if (innerTransactionProperty == null) throw new Exception("InnerTransaction property is null");
+                    var innerTransactionValue = innerTransactionProperty.GetValue(transaction);
+                    bodyBuilder.OpenComponent(0, Type.GetType($"aLice_utils.Client.Components.TransactionForms.{transactionType}") ?? throw new InvalidOperationException());
+                    bodyBuilder.AddAttribute(1, "InnerTransaction", innerTransactionValue);
+                    bodyBuilder.CloseComponent();
+                }
+                builder.AddAttribute(2, "TransactionBody", (RenderFragment) Body);
+                builder.CloseComponent();   
+            }
         } 
         catch (Exception e)
         {
@@ -68,6 +76,16 @@
             case "MosaicDefinitionTransaction":
             {
                 var type = new aLice_utils.Shared.Models.Transaction.MosaicDefinitionTransaction().GetType();
+                return Activator.CreateInstance(type) ?? throw new InvalidOperationException("Activator returned null");
+            }
+            case "MosaicSupplyChangeTransaction":
+            {
+                var type = new aLice_utils.Shared.Models.Transaction.MosaicSupplyChangeTransaction().GetType();
+                return Activator.CreateInstance(type) ?? throw new InvalidOperationException("Activator returned null");
+            }
+            case "MosaicSupplyRevocationTransaction":
+            {
+                var type = new aLice_utils.Shared.Models.Transaction.MosaicSupplyRevocationTransaction().GetType();
                 return Activator.CreateInstance(type) ?? throw new InvalidOperationException("Activator returned null");
             }
             default:

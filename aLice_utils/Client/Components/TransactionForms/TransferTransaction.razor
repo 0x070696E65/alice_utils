@@ -1,35 +1,70 @@
-@*@using BlazorStrap
-@using CatSdk.Utils
-@using BlazorStrap.Extensions.FluentValidation
-@using aLice_utils.Client.Services
+@using BlazorStrap
+@using aLice_utils.Shared.Models
+@using aLice_utils.Shared.Models.Transaction
 
-<h3>TransferTransaction</h3>
-<BSForm Model="Transaction" OnValidSubmit="Submit">
-    <FluentValidator TValidator="Validator.TransferTransactionValidator" />
-    <TransactionHeader TransactionMeta="Transaction.TransactionMeta"/>
-    <TransferTransactionBody InnerTransaction="Transaction.InnerTransaction" TransactionMeta="Transaction.TransactionMeta" />
-    <BSInputGroup MarginBottom="Margins.Medium">
-        <BSButton IsSubmit="true" Color="BSColor.Primary">Submit</BSButton>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SignerPublicKey</span>
+        <BSInput InputType="InputType.Text" placeholder="アカウントを指定しない場合は空欄で構いません" @bind-Value="InnerTransaction.SignerPublicKey"/>
     </BSInputGroup>
-</BSForm>
-<Result qrSource="@qrSource" alice="@alice" isResult="@isResult" showSpinner="@showSpinner"></Result>
+    <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)"/>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">RecipientAddress</span>
+        <BSInput InputType="InputType.Text" placeholder="Symbol Address" @bind-Value="InnerTransaction.RecipientAddress"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.RecipientAddress)"/>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Message</span>
+        <BSInput InputType="InputType.TextArea" placeholder="Message" @bind-Value="InnerTransaction.Message"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.Message)"/>
+</BSRow>
 
-@code {
-    public readonly aLice_utils.Shared.Models.Transaction.TransferTransaction Transaction = new ();
-    private string? qrSource;
-    string? alice;
-    bool isResult;
-    bool showSpinner;
-    
-    private async void Submit()
-    {
-        showSpinner = true;
-        var tx = SymbolBuilderService.BuildTransaction(Transaction);
-        TransactionHelper.SetMaxFee(tx, int.Parse(Transaction.TransactionMeta.FeeMultiplier));
-        alice = $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(tx.Serialize())}&deadline={Transaction.TransactionMeta.Deadline}&method=announce&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}";
-        qrSource = await QRServices.GenerateQR(alice);
-        showSpinner = false;
-        isResult = true;
-        StateHasChanged();
+<BSRow MarginBottom="Margins.Medium">
+    <BSLabel Class="fw-bold small">Mosaics</BSLabel>
+    @{
+        InnerTransaction.Mosaics ??= new List<Mosaic>();
     }
-}*@
+    <BSRow MarginBottom="Margins.Medium">
+        @foreach (var mosaic in InnerTransaction.Mosaics)
+        {
+            <BSInputGroup>
+                <BSInput InputType="InputType.Text" placeholder="Mosaic ID" @bind-Value="mosaic.Id"/>
+                <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => SetCurrencyMosaicId(mosaic)">C</BSButton>
+                <BSInput InputType="InputType.Number" placeholder="Amount" @bind-Value="mosaic.Amount"/>
+                <BSButton Color="BSColor.Secondary" IsOutlined="true" OnClick="() => RemoveMosaic(mosaic)">-</BSButton>
+            </BSInputGroup>
+            <ValidationMessage For=@(() => mosaic.Id)/>
+            <ValidationMessage For=@(() => mosaic.Amount)/>
+        }
+    </BSRow>
+    <BSInputGroup MarginBottom="Margins.Medium">
+        <BSButton Color="BSColor.Primary" IsOutlined="true" OnClick="@AddMosaic">+</BSButton>
+    </BSInputGroup>
+</BSRow>
+@code {
+
+    [Parameter]
+    public InnerTransferTransaction InnerTransaction { get; set; } = new ();
+
+    [Parameter]
+    public TransactionMeta TransactionMeta { get; set; } = new ();
+    
+    private void AddMosaic()
+    {
+        InnerTransaction.Mosaics.Add(new Mosaic());
+    }
+    private void RemoveMosaic(Mosaic mosaic)
+    {
+        InnerTransaction.Mosaics.Remove(mosaic);
+    }
+
+    private void SetCurrencyMosaicId(Mosaic mosaic)
+    {
+        mosaic.Id = TransactionMeta.NetworkType == "MainNet" ? "6BED913FA20223F8" : "72C0212E67A08BCE";
+    }
+}

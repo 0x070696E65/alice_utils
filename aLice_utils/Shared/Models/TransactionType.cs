@@ -37,7 +37,6 @@ public abstract class TransactionTypeExtension
     } 
     public static List<string> GetInnerTransactionTypeList()
     {
-        
         var txList = Enum.GetValues(typeof(TransactionType)).Cast<TransactionType>().Select(x => x.ToString()).ToList();
         txList.RemoveAll(item => item.Contains("Aggregate"));
         return txList;

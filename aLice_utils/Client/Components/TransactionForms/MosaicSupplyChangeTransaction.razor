@@ -1,0 +1,39 @@
+@using BlazorStrap
+@using aLice_utils.Shared.Models.Transaction
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SignerPublicKey</span>
+        <BSInput InputType="InputType.Text" placeholder="空欄の場合はモザイク作成者の要署名" @bind-Value="InnerTransaction.SignerPublicKey"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.SignerPublicKey)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">MosaicID</span>
+        <BSInput InputType="InputType.Text" placeholder="MosaicID" @bind-Value="InnerTransaction.MosaicID"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.MosaicID)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Action</span>
+        <BSInputCheckbox CheckedValue="@("Increase")" @bind-Value="InnerTransaction.Action" UnCheckedValue="@("Decrease")" IsToggle="true" Color="BSColor.Secondary">
+            @InnerTransaction.Action
+        </BSInputCheckbox>
+    </BSInputGroup>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Delta</span>
+        <BSInput InputType="InputType.Number" placeholder="Delta" @bind-Value="InnerTransaction.Delta"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.Delta)" />
+</BSRow>
+@code {
+    [Parameter]
+    public InnerMosaicSupplyChangeTransaction InnerTransaction { get; set; } = new ();
+    
+    [Parameter]
+    public TransactionMeta TransactionMeta { get; set; } = new ();
+}

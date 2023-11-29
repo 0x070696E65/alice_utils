@@ -4,16 +4,10 @@
 @using aLice_utils.Client.Services
 @using aLice_utils.Shared.Models.Transaction
 
-<h3>@nameof(BaseTransaction)</h3>
+<h3>@Transaction.GetType().Name</h3>
 
 <BSForm Model="Transaction" OnValidSubmit="Submit">
-    @if (Transaction is aLice_utils.Shared.Models.Transaction.TransferTransaction)
-    {
-        <FluentValidator TValidator="Validator.TransferTransactionValidator"/>
-    } else if (Transaction is aLice_utils.Shared.Models.Transaction.MosaicDefinitionTransaction)
-    {
-        <FluentValidator TValidator="Validator.MosaicDefinitionTransactionValidator"/>   
-    }
+    <FluentValidator TValidator="Validator.TransactionValidator"/>
     <TransactionHeader TransactionMeta="Transaction.TransactionMeta"/>
     @TransactionBody
     <BSInputGroup MarginBottom="Margins.Medium">

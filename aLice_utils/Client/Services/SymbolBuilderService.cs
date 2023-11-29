@@ -1,4 +1,5 @@
 using aLice_utils.Shared.Models.Transaction;
+using CatSdk.Facade;
 using CatSdk.Symbol;
 using CatSdk.Utils;
 using NETWORKTYPE = CatSdk.Symbol.NetworkType;
@@ -20,6 +21,19 @@ public abstract class SymbolBuilderService
             if (transaction is MosaicDefinitionTransaction t)
             {
                 return BuildMosaicDefinitionTransaction(t);
+            }
+        } else if (transaction.GetType() == typeof(MosaicSupplyChangeTransaction))
+        {
+            if (transaction is MosaicSupplyChangeTransaction t)
+            {
+                return BuildMosaicSupplyChangeTransaction(t);
+            }
+        }
+        else if (transaction.GetType() == typeof(AggregateCompleteTransaction))
+        {
+            if (transaction is AggregateCompleteTransaction t)
+            {
+                return BuildAggregateCompleteTransaction(t);
             }
         }
         throw new Exception("transaction is not defined.");
@@ -72,5 +86,69 @@ public abstract class SymbolBuilderService
             Divisibility = byte.Parse(Transaction.InnerTransaction.Divisibility),
             Flags = new MosaicFlags(Converter.CreateMosaicFlags(Transaction.InnerTransaction.SupplyMutable == "true", Transaction.InnerTransaction.Transferable == "true", Transaction.InnerTransaction.Restrictable == "true", Transaction.InnerTransaction.Revokable == "true")),
         };
+    }
+    
+    private static MosaicSupplyChangeTransactionV1 BuildMosaicSupplyChangeTransaction(MosaicSupplyChangeTransaction Transaction)
+    {
+        return new MosaicSupplyChangeTransactionV1()
+        {
+            SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
+            Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? CatSdk.Symbol.NetworkType.MAINNET : CatSdk.Symbol.NetworkType.TESTNET,
+            MosaicId = new UnresolvedMosaicId(Convert.ToUInt64(Transaction.InnerTransaction.MosaicID, 16)),
+            Action = Transaction.InnerTransaction.Action == "Increase" ? MosaicSupplyChangeAction.INCREASE : MosaicSupplyChangeAction.DECREASE,
+            Delta = new Amount(ulong.Parse(Transaction.InnerTransaction.Delta)),
+        };
+    }
+
+    private static AggregateCompleteTransactionV2 BuildAggregateCompleteTransaction(AggregateCompleteTransaction Transaction)
+    {
+        var aggTx = new AggregateCompleteTransactionV2()
+        {
+            Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? CatSdk.Symbol.NetworkType.MAINNET : CatSdk.Symbol.NetworkType.TESTNET
+        };
+        var innerTransactions = new List<IBaseTransaction>();
+        
+        foreach (var t in Transaction.Transactions)
+        {
+            if (t.GetType() == typeof(InnerTransferTransaction))
+            {
+                if(t is not InnerTransferTransaction innerTx) continue;
+                var innerTransferTranasction = new EmbeddedTransferTransactionV1
+                {
+                    Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? CatSdk.Symbol.NetworkType.MAINNET : CatSdk.Symbol.NetworkType.TESTNET
+                };
+                if(innerTx.RecipientAddress != "") innerTransferTranasction.RecipientAddress = new UnresolvedAddress(Converter.StringToAddress(innerTx.RecipientAddress));
+                if (innerTx.Message != "") innerTransferTranasction.Message = Converter.Utf8ToPlainMessage(innerTx.Message);
+                if (innerTx.Mosaics is {Count: > 0 })
+                {
+                    var mosaics = new List<UnresolvedMosaic>();
+                    foreach (var mosaic in innerTx.Mosaics)
+                    {
+                        ulong id = 0;
+                        try
+                        {
+                            id = Convert.ToUInt64(mosaic.Id, 16);
+                        }
+                        catch (Exception)
+                        {
+                            id = IdGenerator.GenerateNamespaceId(mosaic.Id);
+                        }
+                        var UnresolvedMosaic = new UnresolvedMosaic()
+                        {
+                            MosaicId = new UnresolvedMosaicId(id),
+                            Amount = new Amount(ulong.Parse(mosaic.Amount))
+                        };
+                        mosaics.Add(UnresolvedMosaic);
+                    }
+                    innerTransferTranasction.Mosaics = mosaics.ToArray();
+                }
+                innerTransactions.Add(innerTransferTranasction);
+            }
+        }
+        var merkleHash = SymbolFacade.HashEmbeddedTransactions(innerTransactions.ToArray());
+        aggTx.TransactionsHash = merkleHash;
+        aggTx.Transactions = innerTransactions.ToArray();
+
+        return aggTx;
     }
 }

@@ -1,17 +1,13 @@
 @using BlazorStrap
-@using CatSdk.Symbol
 @using CatSdk.Utils
 @using BlazorStrap.Extensions.FluentValidation
 @using aLice_utils.Client.Services
 @using aLice_utils.Shared.Models
-@using aLice_utils.Client.Components.TransactionForms
 @using aLice_utils.Shared.Models.Transaction
-@using BlazorStrap.V5
-@using CatSdk.Facade
 
 <h3>AggregateCompleteTransaction</h3>
 <BSForm Model="Transaction" OnValidSubmit="Submit">
-    @*<FluentValidator TValidator="Validator.TransferTransactionValidator" />*@
+    <FluentValidator TValidator="Validator.AggregateCompleteTransactionValidator" />
     <TransactionHeader TransactionMeta="Transaction.TransactionMeta"></TransactionHeader>
     
     <BSDropdown>
@@ -42,7 +38,6 @@
 
 @code {
     public readonly aLice_utils.Shared.Models.Transaction.AggregateCompleteTransaction Transaction = new ();
-    private readonly List<IInnerTransaction> InnerTransactions = new ();
     private readonly List<Dictionary<string, RenderFragment>> transactionComponents = new ();
     private int componentCounter;
     
@@ -65,24 +60,27 @@
         componentCounter++;
         var localCounter = componentCounter;
         IInnerTransaction? tx = null;
-        var name = "";
         if (option == "TransferTransaction")
         {
             tx = new InnerTransferTransaction();
-            InnerTransactions.Add(tx);
-            name = "InnerTransferTransaction";
+            Transaction.Transactions.Add(tx);
+        } else if (option == "MosaicDefinitionTransaction")
+        {
+            tx = new InnerMosaicDefinitionTransaction();
+            Transaction.Transactions.Add(tx);
         }
         
         return builder =>
         {
-            if (name != "")
+            try
             {
-                builder.OpenComponent(localCounter, Type.GetType($"aLice_utils.Client.Components.TransactionForms.{option}Body") ?? throw new InvalidOperationException());
-                builder.AddAttribute(localCounter, name, tx);
+                builder.OpenComponent(localCounter, Type.GetType($"aLice_utils.Client.Components.TransactionForms.{option}") ?? throw new InvalidOperationException());
+                builder.AddAttribute(localCounter, "InnerTransaction", tx);
                 builder.CloseElement();
+
             }
-            else
-            {
+            catch
+            {            
                 builder.OpenElement(localCounter, "div");
                 builder.AddContent(localCounter, $"Transaction type {option} is not implemented yet");
                 builder.CloseElement();
@@ -93,52 +91,7 @@
     private async void Submit()
     {
         showSpinner = true;
-
-        var aggTx = new AggregateCompleteTransactionV2()
-        {
-            Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? CatSdk.Symbol.NetworkType.MAINNET : CatSdk.Symbol.NetworkType.TESTNET
-        };
-        var innerTransactions = new List<IBaseTransaction>();
-        foreach (var t in InnerTransactions)
-        {
-            if (t.GetType() == typeof(InnerTransferTransaction))
-            {
-                if(t is not InnerTransferTransaction innerTx) continue;
-                var innerTransferTranasction = new EmbeddedTransferTransactionV1
-                {
-                    Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? CatSdk.Symbol.NetworkType.MAINNET : CatSdk.Symbol.NetworkType.TESTNET
-                };
-                if(innerTx.RecipientAddress != "") innerTransferTranasction.RecipientAddress = new UnresolvedAddress(Converter.StringToAddress(innerTx.RecipientAddress));
-                if (innerTx.Message != "") innerTransferTranasction.Message = Converter.Utf8ToPlainMessage(innerTx.Message);
-                if (innerTx.Mosaics is {Count: > 0 })
-                {
-                    var mosaics = new List<UnresolvedMosaic>();
-                    foreach (var mosaic in innerTx.Mosaics)
-                    {
-                        ulong id = 0;
-                        try
-                        {
-                            id = Convert.ToUInt64(mosaic.Id, 16);
-                        }
-                        catch (Exception)
-                        {
-                            id = IdGenerator.GenerateNamespaceId(mosaic.Id);
-                        }
-                        var UnresolvedMosaic = new UnresolvedMosaic()
-                        {
-                            MosaicId = new UnresolvedMosaicId(id),
-                            Amount = new Amount(ulong.Parse(mosaic.Amount))
-                        };
-                        mosaics.Add(UnresolvedMosaic);
-                    }
-                    innerTransferTranasction.Mosaics = mosaics.ToArray();
-                }
-                innerTransactions.Add(innerTransferTranasction);
-            }
-        }
-        var merkleHash = SymbolFacade.HashEmbeddedTransactions(innerTransactions.ToArray());
-        aggTx.TransactionsHash = merkleHash;
-        aggTx.Transactions = innerTransactions.ToArray();
+        var aggTx = SymbolBuilderService.BuildTransaction(Transaction);
         TransactionHelper.SetMaxFee(aggTx, int.Parse(Transaction.TransactionMeta.FeeMultiplier));
         
         alice = $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(aggTx.Serialize())}&deadline={Transaction.TransactionMeta.Deadline}&method=announce&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}";
