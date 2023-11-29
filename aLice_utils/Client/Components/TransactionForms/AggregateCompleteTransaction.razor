@@ -4,14 +4,13 @@
 @using aLice_utils.Client.Services
 @using aLice_utils.Shared.Models
 @using aLice_utils.Shared.Models.Transaction
-@using CatSdk.Facade
 @using CatSdk.Symbol
 
 <BSLabel Class="fw-bold" Size="Size.ExtraLarge">AggregateCompleteTransaction</BSLabel>
 
 <BSForm Model="Transaction" OnValidSubmit="Submit">
-    <FluentValidator TValidator="Validator.AggregateCompleteTransactionValidator" />
-    <TransactionHeader TransactionMeta="Transaction.TransactionMeta"></TransactionHeader>
+    <FluentValidator TValidator="Validator.TransactionValidator" />
+    <TransactionHeader TransactionMeta="Transaction.TransactionMeta" />
     
     <BSDropdown>
         <Toggler><BSToggle IsButton="true" Color="BSColor.Secondary">Add Transaction</BSToggle></Toggler>
@@ -71,12 +70,14 @@
         var uniqueKey = GenerateUniqueKey(option);
         var transactionComponent = CreateTransactionComponent(option, uniqueKey);
         transactionComponents.Add(uniqueKey, transactionComponent);
+        StateHasChanged();
     }
     
     private void RemoveTransaction(string key)
     {
         transactionComponents.Remove(key);
         Transaction.Transactions.Remove(key);
+        StateHasChanged();
     }
     
     private RenderFragment CreateTransactionComponent(string option, string uniqueKey)
@@ -85,6 +86,7 @@
         var localCounter = componentCounter;
         var tx = (IInnerTransaction)SymbolBuilderService.CreateTransactionInstance(option, true);
         Transaction.Transactions.Add(uniqueKey, tx);
+        Transaction.TransactionsForValidate.Add(tx);
         
         return builder =>
         {
@@ -107,8 +109,8 @@
     private async void Submit()
     {
         showSpinner = true;
-        var aggTx = SymbolBuilderService.BuildTransaction(Transaction);
-        TransactionHelper.SetMaxFee(aggTx, int.Parse(Transaction.TransactionMeta.FeeMultiplier), Transaction.CosignatureCount);
+        var aggTx = SymbolBuilderService.BuildTransaction(Transaction, true);
+        TransactionHelper.SetMaxFee((ITransaction)aggTx, int.Parse(Transaction.TransactionMeta.FeeMultiplier), Transaction.CosignatureCount);
         
         alice = Transaction.IsAnnounce == "true" 
             ? $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(aggTx.Serialize())}&deadline={Transaction.TransactionMeta.Deadline}&method=announce&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}" 

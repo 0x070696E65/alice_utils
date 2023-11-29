@@ -31,7 +31,6 @@ public abstract class Validator
         public MosaicDefinitionTransactionValidator()
         {
             RuleFor(tranasction => tranasction.SignerPublicKey).NotEmpty().IsHex().IsXCharacters(64);
-            RuleFor(tranasction => tranasction.MosaicID);
             RuleFor(tranasction => tranasction.Duration).NotEmpty().IsOver(0);
             RuleFor(tranasction => tranasction.Divisibility).NotEmpty().IsOver(0).IsUnder(6);
         }
@@ -243,19 +242,16 @@ public abstract class Validator
         {
             try
             {
-                RuleFor(baseTransaction => baseTransaction.TransactionMeta)
-                    .SetValidator(new TransactionMetaValidator());
+                RuleFor(baseTransaction => baseTransaction.TransactionMeta).SetValidator(new TransactionMetaValidator());
                 When(transaction => transaction is AggregateCompleteTransaction,
                     () =>
                     {
-                        RuleFor(transaction => (AggregateCompleteTransaction) transaction)
-                            .SetValidator(new AggregateCompleteTransactionValidator());
+                        RuleFor(transaction => (AggregateCompleteTransaction) transaction).SetValidator(new AggregateCompleteTransactionValidator());
                     });
                 When(transaction => transaction is AggregateBondedTransaction,
                     () =>
                     {
-                        RuleFor(transaction => (AggregateBondedTransaction) transaction)
-                            .SetValidator(new AggregateBondedTransactionValidator());
+                        RuleFor(transaction => (AggregateBondedTransaction) transaction).SetValidator(new AggregateBondedTransactionValidator());
                     });
                 When(transaction => transaction is TransferTransaction,
                     () =>
@@ -408,7 +404,8 @@ public abstract class Validator
     {
         public AggregateCompleteTransactionValidator()
         {
-            RuleForEach(transaction => transaction.Transactions.Values).SetValidator(new InnerTransactionValidator());
+            RuleForEach(transaction => transaction.TransactionsForValidate)
+                .SetValidator(new InnerTransactionValidator());
         }
     }
     
