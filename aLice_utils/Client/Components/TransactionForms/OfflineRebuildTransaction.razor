@@ -1,0 +1,77 @@
+@using BlazorStrap
+@using aLice_utils.Shared.Models.Transaction
+@using CatSdk.Facade
+@using CatSdk.Symbol
+@using CatSdk.Utils
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SignedPayload</span>
+        <BSInput InputType="InputType.TextArea" placeholder="SignedPayload" @bind-Value="InnerTransaction.SignedPayload"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => InnerTransaction.SignedPayload)" />
+</BSRow>
+<BSCol MarginBottom="Margins.Medium" Column="3">
+    <BSButton Color="BSColor.Info" IsOutlined="true" OnClick="@RebuildTranasction">Rebuild</BSButton>
+</BSCol>
+
+<BSRow MarginBottom="Margins.Medium" MarginTop="Margins.Medium">
+    @foreach (var transactionComponent in transactionComponents)
+    {
+        <BSCard CardType="CardType.Card" MarginBottom="Margins.Medium" PaddingTop="Padding.Medium">
+            @transactionComponent
+        </BSCard>
+    }
+</BSRow>
+
+@code {
+    [Parameter]
+    public required aLice_utils.Shared.Models.Transaction.OfflineRebuildTransaction InnerTransaction { get; set; }
+    
+    [Parameter]
+    public TransactionMeta TransactionMeta { get; set; } = new ();
+    
+    [Parameter]
+    public bool IsInner { get; set; } = false;
+    
+    private readonly List<RenderFragment> transactionComponents = new ();
+    private int componentCounter;
+  
+    private void RebuildTranasction()
+    {
+        var aggtx = (AggregateCompleteTransactionV2)TransactionFactory.Deserialize(InnerTransaction.SignedPayload);
+        var network = aggtx.Network == NetworkType.MAINNET ? Network.MainNet : Network.TestNet;
+        var facade = new SymbolFacade(network);
+        var hash = facade.HashTransaction(aggtx).ToString();
+        
+        foreach (var aggtxTransaction in aggtx.Transactions)
+        {
+            if (Converter.BytesToHex(aggtx.SignerPublicKey.bytes) == Converter.BytesToHex(aggtxTransaction.SignerPublicKey.bytes)) continue;
+            
+            var inner = new InnerCosignatureTransaction()
+            {
+                SignerPublicKey = Converter.BytesToHex(aggtxTransaction.SignerPublicKey.bytes),
+                Hash = hash,
+            };
+            InnerTransaction.Transactions.Add(inner);
+            var transactionComponent = CreateCosignatureComponent(inner);
+            transactionComponents.Add(transactionComponent);
+        }
+        InnerTransaction.Hash = hash;
+        StateHasChanged();
+    }
+    
+    private RenderFragment CreateCosignatureComponent(InnerCosignatureTransaction tx)
+    {
+        componentCounter++;
+        var localCounter = componentCounter;
+        
+        return builder =>
+        {
+            builder.OpenComponent(localCounter, Type.GetType($"aLice_utils.Client.Components.TransactionForms.CosignatureTransaction") ?? throw new InvalidOperationException());
+            builder.AddAttribute(localCounter, "InnerTransaction", tx);
+            builder.AddAttribute(localCounter, "IsInner", true);
+            builder.CloseElement();
+        };
+    }
+}

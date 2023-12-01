@@ -73,6 +73,9 @@
     [Parameter]
     public TransactionMeta TransactionMeta { get; set; } = new ();
     
+    [Parameter]
+    public bool IsInner { get; set; } = false;
+    
     private void AddRestrictionAdditions(string transactionType)
     {
         InnerTransaction.RestrictionAdditions.Add(new TransactionClass(transactionType));

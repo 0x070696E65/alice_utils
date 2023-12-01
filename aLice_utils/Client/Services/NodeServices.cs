@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace aLice_utils.Client.Services;
 
 public class NodeServices
@@ -71,5 +73,13 @@ public class NodeServices
     {
         public string? apiNode { get; set; }
         public string? db { get; set; }
+    }
+
+    public static async Task<string> Announce(string node, string payload)
+    {
+        using var client = new HttpClient();
+        var content = new StringContent("{\"payload\": \"" + payload + "\"}", Encoding.UTF8, "application/json");
+        var response = await client.PutAsync(node + "/transactions", content);
+        return await response.Content.ReadAsStringAsync();
     }
 }

@@ -3,10 +3,42 @@
 
 @if (showSpinner)
 {
-    <BSSpinner Color="BSColor.Secondary"/>
+    
+    <BSContainer>
+        <BSRow MarginBottom="Margins.Medium" Justify="Justify.Center">
+            <BSCol Column="2">
+                <BSSpinner Color="BSColor.Secondary" Class="align-content-center"/>
+            </BSCol>
+        </BSRow>
+    </BSContainer>
+}
+@if (IsOfflineAnnounceResult)
+{
+    <BSRow MarginBottom="Margins.Medium">
+        <BSLabel Class="text-success">
+            @OfflineAnnounceResult
+        </BSLabel>
+    </BSRow>
+}
+@if (IsOfflineAnnounceResultError)
+{
+    <BSRow MarginBottom="Margins.Medium">
+        <BSLabel Class="text-danger">
+            @OfflineAnnounceResultError
+        </BSLabel>
+    </BSRow>
 }
 @if (isResult)
 {
+    if (hash != null)
+    {
+        <BSRow MarginBottom="Margins.Medium">
+            <BSInputGroup>
+                <span class="@BS.Input_Group_Text">Hash</span>
+                <BSInput InputType="InputType.Text" placeholder="hash" @bind-Value="hash"/>
+            </BSInputGroup>
+        </BSRow>   
+    }
     <BSRow MarginBottom="Margins.Medium">
         <BSInputGroup>
             <span class="@BS.Input_Group_Text">aLice code</span>
@@ -33,6 +65,21 @@
     
     [Parameter]
     public bool showSpinner { get; set; }
+    
+    [Parameter]
+    public string? hash { get; set; }
+
+    [Parameter]
+    public bool IsOfflineAnnounceResult { get; set; } = false;
+    
+    [Parameter]
+    public bool IsOfflineAnnounceResultError { get; set; } = false;
+
+    [Parameter]
+    public string OfflineAnnounceResult { get; set; } = "";
+    
+    [Parameter]
+    public string OfflineAnnounceResultError { get; set; } = "";
     
     private void OpenAlice()
     {

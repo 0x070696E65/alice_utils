@@ -62,6 +62,9 @@
     [Parameter]
     public TransactionMeta TransactionMeta { get; set; } = new ();
     
+    [Parameter]
+    public bool IsInner { get; set; } = false;
+    
     private void AddAddressAdditions()
     {
         InnerTransaction.AddressAdditions.Add(new AddressClass());

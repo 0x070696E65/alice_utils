@@ -27,6 +27,8 @@ public enum TransactionType
     MosaicGlobalRestrictionTransaction,
     AggregateCompleteTransaction,
     AggregateBondedTransaction,
+    CosignatureTransaction,
+    OfflineRebuildTransaction,
 }
 
 public abstract class TransactionTypeExtension
@@ -39,6 +41,8 @@ public abstract class TransactionTypeExtension
     {
         var txList = Enum.GetValues(typeof(TransactionType)).Cast<TransactionType>().Select(x => x.ToString()).ToList();
         txList.RemoveAll(item => item.Contains("Aggregate"));
+        txList.RemoveAll(item => item.Contains("Cosignature"));
+        txList.RemoveAll(item => item.Contains("OfflineRebuildTransaction"));
         return txList;
     } 
 }

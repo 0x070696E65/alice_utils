@@ -93,8 +93,7 @@ public abstract class Validator
     {
         public HashLockTransactionValidator()
         {
-            RuleFor(tranasction => tranasction.Duration).IsOver(0);
-            RuleFor(tranasction => tranasction.Hash).IsXCharacters(64).NotEmpty().IsHex();
+            RuleFor(tranasction => tranasction.Duration).IsOver(1);
         }
     }
     
@@ -236,13 +235,24 @@ public abstract class Validator
         }
     }
     
+    private class CosignatureTransactionValidator : AbstractValidator<InnerCosignatureTransaction>
+    {
+        public CosignatureTransactionValidator()
+        {
+        }
+    }
+    
     public class TransactionValidator : AbstractValidator<BaseTransaction>
     {
         public TransactionValidator()
         {
             try
             {
-                RuleFor(baseTransaction => baseTransaction.TransactionMeta).SetValidator(new TransactionMetaValidator());
+                When(transaction => transaction is not CosignatureTransaction,
+                    () =>
+                    {
+                        RuleFor(baseTransaction => baseTransaction.TransactionMeta).SetValidator(new TransactionMetaValidator());
+                    });
                 When(transaction => transaction is AggregateCompleteTransaction,
                     () =>
                     {
@@ -391,6 +401,12 @@ public abstract class Validator
                         RuleFor(transaction => ((MosaicGlobalRestrictionTransaction) transaction).InnerTransaction)
                             .SetValidator(new MosaicGlobalRestrictionTransactionValidator());
                     });
+                When(transaction => transaction is CosignatureTransaction,
+                    () =>
+                    {
+                        RuleFor(transaction => ((CosignatureTransaction) transaction).InnerTransaction)
+                            .SetValidator(new CosignatureTransactionValidator());
+                    });
             }
             catch (Exception e)
             {
@@ -404,8 +420,7 @@ public abstract class Validator
     {
         public AggregateCompleteTransactionValidator()
         {
-            RuleForEach(transaction => transaction.TransactionsForValidate)
-                .SetValidator(new InnerTransactionValidator());
+            RuleForEach(transaction => transaction.TransactionsForValidate).SetValidator(new InnerTransactionValidator());
         }
     }
     
@@ -413,7 +428,7 @@ public abstract class Validator
     {
         public AggregateBondedTransactionValidator()
         {
-            RuleForEach(transaction => transaction.Transactions).SetValidator(new InnerTransactionValidator());
+            RuleForEach(transaction => transaction.TransactionsForValidate).SetValidator(new InnerTransactionValidator());
         }
     }
     

@@ -7,6 +7,8 @@ public class TransactionMeta: INotifyPropertyChanged
     public string Deadline { get; set; } = "7200";
     public string FeeMultiplier { get; set; } = "100";
 
+    public string FixedDeadline { get; set; } = "Flexible";
+    
     private string _networkType = "TestNet";
     public string NetworkType
     {

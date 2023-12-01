@@ -4,18 +4,38 @@
 @using aLice_utils.Client.Services
 @using aLice_utils.Shared.Models.Transaction
 @using CatSdk.Symbol
+@using System.Net.WebSockets
+@using CatSdk.Facade
 
 <BSLabel Class="fw-bold" Size="Size.ExtraLarge">@Transaction.GetType().Name</BSLabel>
 
 <BSForm Model="Transaction" OnValidSubmit="Submit">
     <FluentValidator TValidator="Validator.TransactionValidator"/>
-    <TransactionHeader TransactionMeta="Transaction.TransactionMeta"/>
+    @if(Transaction.GetType() != typeof(aLice_utils.Shared.Models.Transaction.CosignatureTransaction) 
+    && Transaction.GetType() != typeof(aLice_utils.Shared.Models.Transaction.OfflineRebuildTransaction))
+    {
+        <TransactionHeader TransactionMeta="Transaction.TransactionMeta"/>   
+    }
+    else
+    {
+        <TransactionHeader TransactionMeta="Transaction.TransactionMeta" IsDeadlineDisabled="true" IsFeeMultiplierDisabled="true"/>
+    }
     @TransactionBody
     <BSInputGroup MarginBottom="Margins.Medium">
         <BSButton IsSubmit="true" Color="BSColor.Primary">Submit</BSButton>
+        @if ((Transaction.GetType() == typeof(AggregateCompleteTransaction) || Transaction.GetType() == typeof(AggregateBondedTransaction)) && isFirstBuild)
+        {
+            <BSButton Color="BSColor.Success" OnClick="@Rebuild">
+                Rebuild
+            </BSButton>
+        }
     </BSInputGroup>
 </BSForm>
-<Result qrSource="@qrSource" alice="@alice" isResult="@isResult" showSpinner="@showSpinner"></Result>
+<Result qrSource="@qrSource" alice="@alice" isResult="@isResult" showSpinner="@showSpinner" 
+        IsOfflineAnnounceResult="@isOfflineAnnounceResult"
+        IsOfflineAnnounceResultError="@isOfflineAnnounceResultError"
+        OfflineAnnounceResult="@offlineAnnounceResult"
+        OfflineAnnounceResultError="@offlineAnnounceResultError"/>
 
 @code {
     [Parameter]
@@ -28,16 +48,130 @@
     string? alice;
     bool isResult;
     bool showSpinner;
+    bool isFirstBuild;
+    bool isOfflineAnnounceResult;
+    bool isOfflineAnnounceResultError;
+    string? offlineAnnounceResult;
+    string? offlineAnnounceResultError;
 
+    private async void Rebuild()
+    {
+        showSpinner = true;
+        if (alice != null && !alice.Contains("&method=announce"))
+        {
+            alice += $"&method=announce_bonded&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}";
+            qrSource = await QRServices.GenerateQR(alice);
+        }
+        showSpinner = false;
+        StateHasChanged();
+    }
+    
     private async void Submit()
     {
         showSpinner = true;
-        var tx = SymbolBuilderService.BuildTransaction(Transaction, false);
-        TransactionHelper.SetMaxFee((ITransaction)tx, int.Parse(Transaction.TransactionMeta.FeeMultiplier));
-        alice = $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(tx.Serialize())}&deadline={Transaction.TransactionMeta.Deadline}&method=announce&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}";
-        qrSource = await QRServices.GenerateQR(alice);
-        showSpinner = false;
-        isResult = true;
+        if (Transaction.GetType() == typeof(aLice_utils.Shared.Models.Transaction.CosignatureTransaction))
+        {
+            var cosignature = (aLice_utils.Shared.Models.Transaction.CosignatureTransaction) Transaction;
+            alice = cosignature.InnerTransaction.IsAnnounce == "true" 
+                ? $"alice://sign?type=request_sign_cosignature&data={cosignature.InnerTransaction.SignedPayload}&method=announce_cosignature&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}" 
+                : $"alice://sign?type=request_sign_cosignature&data={cosignature.InnerTransaction.SignedPayload}";
+            
+            qrSource = await QRServices.GenerateQR(alice);
+            showSpinner = false;
+            isResult = true;
+            isFirstBuild = true;
+        } 
+        else if (Transaction.GetType() == typeof(aLice_utils.Shared.Models.Transaction.OfflineRebuildTransaction))
+        {
+            var offlineRebuildTransaction = (aLice_utils.Shared.Models.Transaction.OfflineRebuildTransaction) Transaction;
+            var tx = (AggregateCompleteTransactionV2)TransactionFactory.Deserialize(offlineRebuildTransaction.SignedPayload);
+            var cosignatures = offlineRebuildTransaction.Transactions.Select(innerCosignatureTransaction => new Cosignature()
+            {
+                Signature = new Signature(Converter.HexToBytes(innerCosignatureTransaction.Signature)), 
+                SignerPublicKey = new PublicKey(Converter.HexToBytes(innerCosignatureTransaction.SignerPublicKey))
+            }).ToList();
+            tx.Cosignatures = cosignatures.ToArray();
+            
+            var cancellationTokenSource = new CancellationTokenSource();
+            var token = cancellationTokenSource.Token;
+
+            var node = Transaction.TransactionMeta.Node;
+            var networkType = Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet;
+            var facade = new SymbolFacade(networkType);
+            var address = facade.Network.PublicKeyToAddress(tx.SignerPublicKey).ToString();
+            
+            using var w = new ClientWebSocket();
+            var websocket = new ListenerService(node, w);
+            using var w2 = new ClientWebSocket();
+            var websocket2 = new ListenerService(node, w2);
+            
+            await websocket.Open();
+            var confirmedTask = websocket.Confirmed(address, token, async (tx) =>
+            {
+                Console.WriteLine("CONFIRMED");
+                if ((string)tx["meta"]?["hash"] == offlineRebuildTransaction.Hash)
+                {
+                    Console.WriteLine("トランザクションが承認されました");
+                    showSpinner = false;
+                    isOfflineAnnounceResult = true;
+                    offlineAnnounceResult = "トランザクションが承認されました";
+                    websocket.Close();
+                    StateHasChanged();
+                };
+                if (token.IsCancellationRequested)
+                {
+                    websocket.Close();
+                    StateHasChanged();
+                    return;
+                }
+            });
+            
+            await websocket2.Open();
+            var statusTask = websocket2.Status(address, token, (n) =>
+            {
+                Console.WriteLine("STATUS");
+                if (token.IsCancellationRequested)
+                {
+                    websocket2.Close();
+                    StateHasChanged();
+                    return;
+                }
+                websocket2.Close();
+                showSpinner = false;
+                isOfflineAnnounceResultError = true;
+                offlineAnnounceResultError = "Error:\n" + n["code"];
+                StateHasChanged();
+            });
+            var announceTask = NodeServices.Announce(offlineRebuildTransaction.TransactionMeta.Node,Converter.BytesToHex(tx.Serialize()));
+            await Task.WhenAll(confirmedTask, statusTask, announceTask);
+        }
+        else
+        {
+            var tx = SymbolBuilderService.BuildTransaction(Transaction, false);
+            if (Transaction.GetType() == typeof(AggregateCompleteTransaction) || Transaction.GetType() == typeof(AggregateBondedTransaction))
+            {
+                var aggTx = (IAggregateTransaction) Transaction;
+                TransactionHelper.SetMaxFee((ITransaction)tx, int.Parse(Transaction.TransactionMeta.FeeMultiplier), aggTx.CosignatureCount);
+                alice = ((IAggregateTransaction)Transaction).IsAnnounce == "true" 
+                    ? $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(tx.Serialize())}&method=announce&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}" 
+                    : $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(tx.Serialize())}";
+            }
+            else
+            {
+                TransactionHelper.SetMaxFee((ITransaction)tx, int.Parse(Transaction.TransactionMeta.FeeMultiplier));
+                alice = $"alice://sign?type=request_sign_transaction&data={Converter.BytesToHex(tx.Serialize())}&method=announce&node={Converter.Utf8ToHex(Transaction.TransactionMeta.Node)}";
+            }
+            if (Transaction.TransactionMeta.FixedDeadline == "Flexible")
+            {
+                alice += $"&deadline={Transaction.TransactionMeta.Deadline}";   
+            }
+            
+            qrSource = await QRServices.GenerateQR(alice);
+            showSpinner = false;
+            isResult = true;
+            isFirstBuild = true;
+        }
+        
         StateHasChanged();
     }
 }

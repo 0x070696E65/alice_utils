@@ -1,5 +1,8 @@
 @using BlazorStrap
 @using aLice_utils.Shared.Models.Transaction
+@using CatSdk.Facade
+@using CatSdk.Symbol
+@using CatSdk.Utils
 
 <BSRow MarginBottom="Margins.Medium">
     <BSInputGroup>
@@ -17,8 +20,16 @@
 </BSRow>
 <BSRow MarginBottom="Margins.Medium">
     <BSInputGroup>
+        <span class="@BS.Input_Group_Text">SignedPayload</span>
+        <BSInput InputType="InputType.TextArea" placeholder="SignedPayload" @bind-Value="SignedPayload"/>
+    </BSInputGroup>
+    <ValidationMessage For="@(() => SignedPayload)" />
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
         <span class="@BS.Input_Group_Text">Hash</span>
         <BSInput InputType="InputType.Text" placeholder="Hash" @bind-Value="InnerTransaction.Hash"/>
+        <BSButton OnClick="@CreateHash" Class="btn-success">+</BSButton>
     </BSInputGroup>
     <ValidationMessage For="@(() => InnerTransaction.Hash)" />
 </BSRow>
@@ -28,4 +39,17 @@
     
     [Parameter]
     public TransactionMeta TransactionMeta { get; set; } = new ();
+    
+    [Parameter]
+    public bool IsInner { get; set; } = false;
+    
+    private string SignedPayload { get; set; } = "";
+
+    private void CreateHash()
+    {
+        var tx = CatSdk.Symbol.TransactionFactory.Deserialize(SignedPayload);
+        var facade = new SymbolFacade(tx.Network == NetworkType.MAINNET ? Network.MainNet : Network.TestNet);
+        var hash = facade.HashTransaction(tx);
+        InnerTransaction.Hash = Converter.BytesToHex(hash.bytes);
+    }
 }

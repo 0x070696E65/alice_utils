@@ -56,6 +56,9 @@
     [Parameter]
     public TransactionMeta TransactionMeta { get; set; } = new ();
 
+    [Parameter]
+    public bool IsInner { get; set; } = false;
+    
     bool isAlertMosaicID;
     
     private async Task GenerateMosaicID()

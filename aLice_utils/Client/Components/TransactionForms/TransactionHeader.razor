@@ -11,14 +11,17 @@
     </BSInputGroup>
 </BSRow>
 <ValidationMessage For="@(() => TransactionMeta.NetworkType)" />
-<BSRow MarginBottom="Margins.Medium">
-    <BSInputGroup>
-        <span class="@BS.Input_Group_Text">Deadline</span>
-        <BSInput InputType="InputType.Number" placeholder="Seconds..." @bind-Value="TransactionMeta.Deadline"/>
-        <span class="@BS.Input_Group_Text">seconds...</span>
-    </BSInputGroup>
-    <ValidationMessage For="@(() => TransactionMeta.Deadline)"/>
-</BSRow>
+@if(!IsDeadlineDisabled){
+    <BSRow MarginBottom="Margins.Medium">
+        <BSInputGroup>
+            <span class="@BS.Input_Group_Text">Deadline</span>
+            <BSInput InputType="InputType.Number" placeholder="Seconds..." @bind-Value="TransactionMeta.Deadline"/>
+            <BSInputCheckbox CheckedValue="@("Fixed")" @bind-Value="TransactionMeta.FixedDeadline" UnCheckedValue="@("Flexible")" IsToggle="true" Color="BSColor.Secondary">
+                @TransactionMeta.FixedDeadline</BSInputCheckbox>
+        </BSInputGroup>
+        <ValidationMessage For="@(() => TransactionMeta.Deadline)"/>
+    </BSRow>   
+}
 <BSRow MarginBottom="Margins.Medium">
     <BSInputGroup>
         <span class="@BS.Input_Group_Text">Node</span>
@@ -26,16 +29,22 @@
     </BSInputGroup>
     <ValidationMessage For="@(() => TransactionMeta.Node)" />
 </BSRow>
-<BSRow MarginBottom="Margins.Medium">
-    <BSInputGroup>
-        <span class="@BS.Input_Group_Text">FeeMultiplier</span>
-        <BSInput InputType="InputType.Number" placeholder="FeeMultiplier" @bind-Value="TransactionMeta.FeeMultiplier"/>
-    </BSInputGroup>
-    <ValidationMessage For="@(() => TransactionMeta.FeeMultiplier)"/>
-</BSRow>
+@if(!IsFeeMultiplierDisabled){
+    <BSRow MarginBottom="Margins.Medium">
+        <BSInputGroup>
+            <span class="@BS.Input_Group_Text">FeeMultiplier</span>
+            <BSInput InputType="InputType.Number" placeholder="FeeMultiplier" @bind-Value="TransactionMeta.FeeMultiplier"/>
+        </BSInputGroup>
+        <ValidationMessage For="@(() => TransactionMeta.FeeMultiplier)"/>
+    </BSRow>
+}
 @code {
     [Parameter]
     public TransactionMeta TransactionMeta { get; set; } = new ();
+    [Parameter]
+    public bool IsDeadlineDisabled { get; set; } = false;
+    [Parameter]
+    public bool IsFeeMultiplierDisabled { get; set; } = false;
     
     private readonly NodeServices nodeServices = new NodeServices();
     

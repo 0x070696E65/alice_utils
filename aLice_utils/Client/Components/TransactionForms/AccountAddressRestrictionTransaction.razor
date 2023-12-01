@@ -57,6 +57,9 @@
     [Parameter]
     public TransactionMeta TransactionMeta { get; set; } = new ();
     
+    [Parameter]
+    public bool IsInner { get; set; } = false;
+    
     private void AddRestrictionAdditions()
     {
         InnerTransaction.RestrictionAdditions.Add(new AddressClass());

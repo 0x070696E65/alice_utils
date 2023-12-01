@@ -1,3 +1,4 @@
+using System.Text;
 using aLice_utils.Shared.Models.Transaction;
 using CatSdk.Facade;
 using CatSdk.Symbol;
@@ -34,6 +35,10 @@ public abstract class SymbolBuilderService
         { "AccountOperationRestrictionTransaction", () => new AccountOperationRestrictionTransaction() },
         { "MosaicAddressRestrictionTransaction", () => new MosaicAddressRestrictionTransaction() },
         { "MosaicGlobalRestrictionTransaction", () => new MosaicGlobalRestrictionTransaction() },
+        { "AggregateCompleteTransaction", () => new AggregateCompleteTransaction() },
+        { "AggregateBondedTransaction", () => new AggregateBondedTransaction() },
+        { "CosignatureTransaction", () => new CosignatureTransaction() },
+        { "OfflineRebuildTransaction", () => new OfflineRebuildTransaction() },
     };
     
     private static readonly Dictionary<string, Func<object>> InnerTransactionInstanceBuilders = new()
@@ -63,7 +68,7 @@ public abstract class SymbolBuilderService
         { "MosaicGlobalRestrictionTransaction", () => new InnerMosaicGlobalRestrictionTransaction() },
     };
 
-    private static readonly Dictionary<Type, Func<BaseTransaction, bool, IBaseTransaction>> TransactionBuilders = new()
+    private static readonly Dictionary<Type, Func<aLice_utils.Shared.Models.Transaction.IBaseTransaction, bool, IBaseTransaction>> TransactionBuilders = new()
     {
         { typeof(TransferTransaction), (t, b) => BuildTransferTransaction((TransferTransaction)t, b) },
         { typeof(MosaicDefinitionTransaction), (t, b) => BuildMosaicDefinitionTransaction((MosaicDefinitionTransaction)t, b) },
@@ -89,6 +94,7 @@ public abstract class SymbolBuilderService
         { typeof(MosaicAddressRestrictionTransaction), (t, b) => BuildMosaicAddressRestrictionTransaction((MosaicAddressRestrictionTransaction)t, b) },
         { typeof(MosaicGlobalRestrictionTransaction), (t, b) => BuildMosaicGlobalRestrictionTransaction((MosaicGlobalRestrictionTransaction)t, b) },
         { typeof(AggregateCompleteTransaction), (t, b) => BuildAggregateCompleteTransaction((AggregateCompleteTransaction)t) },
+        { typeof(AggregateBondedTransaction), (t, b) => BuildAggregateBondedTransaction((AggregateBondedTransaction)t) },
     };
 
     public static object CreateTransactionInstance(string transactionType, bool isInnerTransaction = false)
@@ -110,7 +116,7 @@ public abstract class SymbolBuilderService
         throw new Exception("Transaction type not implemented");
     }
 
-    public static IBaseTransaction BuildTransaction(BaseTransaction transaction, bool b)
+    public static IBaseTransaction BuildTransaction(aLice_utils.Shared.Models.Transaction.IBaseTransaction transaction, bool b)
     {
         if (TransactionBuilders.TryGetValue(transaction.GetType(), out var buildFunction))
         {
@@ -167,9 +173,11 @@ public abstract class SymbolBuilderService
         }
         else
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new TransferTransactionV1
             {
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET,
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = signerPublicKey,
                 RecipientAddress = unresolvedAddress,
                 Message = message,
@@ -202,6 +210,7 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new MosaicDefinitionTransactionV1()
             {
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != ""
@@ -210,6 +219,7 @@ public abstract class SymbolBuilderService
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet"
                     ? NETWORKTYPE.MAINNET
                     : NETWORKTYPE.TESTNET,
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 Nonce = new MosaicNonce(Transaction.InnerTransaction.Nonce),
                 Id = new MosaicId(Convert.ToUInt64(Transaction.InnerTransaction.MosaicID, 16)),
                 Duration = new BlockDuration(ulong.Parse(Transaction.InnerTransaction.Duration)),
@@ -243,8 +253,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new MosaicSupplyChangeTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != ""
                     ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey))
                     : new PublicKey(),
@@ -277,8 +289,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new MosaicSupplyRevocationTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 Mosaic = new UnresolvedMosaic()
@@ -308,8 +322,10 @@ public abstract class SymbolBuilderService
             };   
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new AccountKeyLinkTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != ""
                     ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey))
                     : new PublicKey(),
@@ -339,8 +355,10 @@ public abstract class SymbolBuilderService
             };   
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new NodeKeyLinkTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != ""
                     ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey))
                     : new PublicKey(),
@@ -370,8 +388,10 @@ public abstract class SymbolBuilderService
             };   
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new VrfKeyLinkTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != ""
                     ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey))
                     : new PublicKey(),
@@ -403,8 +423,10 @@ public abstract class SymbolBuilderService
             };   
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new VotingKeyLinkTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != ""
                     ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey))
                     : new PublicKey(),
@@ -437,8 +459,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new HashLockTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 Mosaic = new UnresolvedMosaic()
@@ -482,8 +506,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new SecretLockTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 Mosaic = new UnresolvedMosaic()
@@ -524,8 +550,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new SecretProofTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 Secret = new Hash256(Converter.HexToBytes(Transaction.InnerTransaction.Secret)),
@@ -557,8 +585,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new AccountMetadataTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 TargetAddress = targetAddress,
@@ -594,8 +624,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new MosaicMetadataTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 TargetMosaicId = targetMosaicId,
@@ -632,8 +664,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new NamespaceMetadataTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 TargetAddress = targetAddress,
@@ -660,8 +694,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new MultisigAccountModificationTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 MinRemovalDelta = byte.Parse(Transaction.InnerTransaction.MinRemovalDelta),
@@ -692,8 +728,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new AddressAliasTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET,
                 NamespaceId = namespaceId,
@@ -723,8 +761,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new MosaicAliasTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET,
                 NamespaceId = namespaceId,
@@ -773,8 +813,10 @@ public abstract class SymbolBuilderService
             return t;
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             var t = new NamespaceRegistrationTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET,
                 Duration = new BlockDuration(ulong.Parse(Transaction.InnerTransaction.Duration)),
@@ -814,8 +856,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new AccountAddressRestrictionTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET,
                 RestrictionFlags = new AccountRestrictionFlags(accountRestrictionFlags),
@@ -850,8 +894,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new AccountMosaicRestrictionTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET,
                 RestrictionFlags = new AccountRestrictionFlags(accountRestrictionFlags),
@@ -881,8 +927,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new AccountOperationRestrictionTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET,
                 RestrictionFlags = new AccountRestrictionFlags(accountRestrictionFlags),
@@ -908,8 +956,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new MosaicAddressRestrictionTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET,
                 MosaicId = new UnresolvedMosaicId(Convert.ToUInt64(Transaction.InnerTransaction.MosaicId, 16)),
@@ -939,8 +989,10 @@ public abstract class SymbolBuilderService
             };
         }
         {
+            var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
             return new MosaicGlobalRestrictionTransactionV1()
             {
+                Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET,
                 MosaicId = new UnresolvedMosaicId(Convert.ToUInt64(Transaction.InnerTransaction.MosaicId, 16)),
@@ -956,8 +1008,28 @@ public abstract class SymbolBuilderService
     
     private static AggregateCompleteTransactionV2 BuildAggregateCompleteTransaction(AggregateCompleteTransaction Transaction)
     {
+        var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
         var aggTx = new AggregateCompleteTransactionV2()
         {
+            SignerPublicKey = Transaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.SignerPublicKey)) : new PublicKey(),
+            Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
+            Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET
+        };
+        var innerTransactions = Transaction.Transactions.Select(t => BuildTransactionFromInner(t.Value)).ToList();
+        var merkleHash = SymbolFacade.HashEmbeddedTransactions(innerTransactions.ToArray());
+        aggTx.TransactionsHash = merkleHash;
+        aggTx.Transactions = innerTransactions.ToArray();
+
+        return aggTx;
+    }
+    
+    private static AggregateBondedTransactionV2 BuildAggregateBondedTransaction(AggregateBondedTransaction Transaction)
+    {
+        var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
+        var aggTx = new AggregateBondedTransactionV2()
+        {
+            SignerPublicKey = Transaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.SignerPublicKey)) : new PublicKey(),
+            Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
             Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET
         };
         var innerTransactions = Transaction.Transactions.Select(t => BuildTransactionFromInner(t.Value)).ToList();
@@ -970,15 +1042,12 @@ public abstract class SymbolBuilderService
 
     private static IBaseTransaction BuildTransactionFromInner(IInnerTransaction innerTransaction)
     {
-        Console.WriteLine("A");
         if (innerTransaction.GetType() == typeof(InnerTransferTransaction))
         {
-            Console.WriteLine("B");
             var tx = new TransferTransaction()
             {
                 InnerTransaction = (InnerTransferTransaction) innerTransaction,
             };
-            Console.WriteLine("C");
             return BuildTransaction(tx, true);
         }
 
