@@ -1,0 +1,46 @@
+﻿@page "/alice_download"
+@inject IJSRuntime JSRuntime
+
+<PageTitle>aLice Download</PageTitle>
+
+<h1>aLice Download</h1>
+
+<BSRow>
+    <BSCol>
+        <a href="https://apps.apple.com/us/app/alice-sign/id6449146041" target="_blank" rel="noopener noreferrer">
+            <BSImage Source="images/ios-badge.png" Height="50px" Width="136px"/>
+        </a>
+        <a href="https://play.google.com/store/apps/details?id=com.pine.alice" target="_blank" rel="noopener noreferrer">
+            <BSImage Source="images/android-badge.png" Height="65px" Width="168px"/>
+        </a>
+    </BSCol>
+</BSRow>
+
+@code {
+    protected async override void OnInitialized()
+    {
+        Console.WriteLine("B");
+        await base.OnInitializedAsync();
+        var userAgent = await JSRuntime.InvokeAsync<string>("eval", "navigator.userAgent");
+        
+        if (IsIOSDevice(userAgent))
+        {
+            await JSRuntime.InvokeVoidAsync("openExternalLink", "https://apps.apple.com/us/app/alice-sign/id6449146041");
+        }
+        else if (IsAndroidDevice(userAgent))
+        {
+            await JSRuntime.InvokeVoidAsync("openExternalLink", "https://play.google.com/store/apps/details?id=com.pine.alice");
+        }
+    }
+
+    private static bool IsIOSDevice(string userAgent)
+    {
+        return userAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase)
+               || userAgent.Contains("iPad", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsAndroidDevice(string userAgent)
+    {
+        return userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase);
+    }
+}
