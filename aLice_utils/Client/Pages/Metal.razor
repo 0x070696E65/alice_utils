@@ -144,21 +144,15 @@
     private string? address { get; set; }
     private string? fileName { get; set; }
     private byte[]? FileContent { get; set; }
-    private bool isForged = false;
-    private bool isAnnouceSuccessed = false;
-    private string? alice = null;
-    private string? metalId = null;
+    private bool isForged;
+    private bool isAnnouceSuccessed;
+    private string? alice;
+    private string? metalId;
     private string? uid;
     private string? Node;
-    private bool IsSpinner = false;
-    private bool IsForgeSpinner = false;
+    private bool IsSpinner;
+    private bool IsForgeSpinner;
     private string? NetworkType;
-    
-    private string hashes = "";
-
-    private string? receivedMessage;
-    private string? responceMessage;
-
     private string? base64;
     private string? Size;
     private string? Fees;
@@ -167,7 +161,7 @@
     private SymbolService? SymbolService;
     private readonly NodeServices NodeServices = new NodeServices();
     
-    private List<Result>? results = new ();
+    private readonly List<Result>? results = new ();
     
     private string? errorMessage;
     
@@ -219,6 +213,9 @@
     private async void OnForge()
     {
         IsForgeSpinner = true;
+        if(Node == null) throw new Exception("Node is null");
+        if(FileContent == null) throw new Exception("FileContent is null");
+        if(PublicKey == null) throw new Exception("PublicKey is null");
         var config = new SymbolServiceConfig(Node);
         SymbolService = new SymbolService(config);
         await SymbolService.Init();
@@ -231,7 +228,7 @@
         var (key, txs, additive) = await MetalService.CreateForgeTxs(publicKey, publicKey, FileContent, false);
         var dummy = SymbolService.BuildAggregateCompleteTxBatches(txs, new PublicKey(Converter.HexToBytes(PublicKey)));
         
-        var fees = dummy.Aggregate<AggregateCompleteTransactionV2?, ulong>(0, (current, aggregateCompleteTransactionV2) => current + aggregateCompleteTransactionV2.Fee.Value);
+        var fees = dummy.Aggregate<AggregateCompleteTransactionV2?, ulong>(0, (current, aggregateCompleteTransactionV2) => current + aggregateCompleteTransactionV2!.Fee.Value);
         Fees = (((double)fees) / 1000000).ToString(CultureInfo.InvariantCulture);
         metalId = MetalService.CalculateMetalId(MetadataType.Account, publicKey, publicKey, key);
         var hosturl = await (await Http.GetAsync("SendMetal?type=host_url")).Content.ReadAsStringAsync();
@@ -337,6 +334,7 @@
     
     private async Task CheckStatus()
     {
+        if (results == null) throw new Exception("results is null");
         if (results.All(x => x.status == Status.Success))
         {
             isAnnouceSuccessed = true;
@@ -355,6 +353,8 @@
     
     private async void OnFetch()
     {
+        if (Node == null) throw new Exception("Node is null");
+        if (metalId == null) throw new Exception("metalId is null");
         var config = new SymbolServiceConfig(Node);
         SymbolService = new SymbolService(config);
         await SymbolService.Init();
@@ -390,9 +390,9 @@
     
     private class Result
     {
-        public string hash { get; set; }
+        public string? hash { get; set; }
         public Status status { get; set; }
-        public string code { get; set; }
+        public string? code { get; set; }
     }
     
     private enum Status
