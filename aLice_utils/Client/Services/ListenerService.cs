@@ -8,7 +8,7 @@ public class ListenerService
 {
     private readonly string uri;
     private readonly ClientWebSocket webSocket;
-    private string uid;
+    private string? uid;
     
     public ListenerService(string _uri, ClientWebSocket _webSocket)
     {
@@ -32,7 +32,8 @@ public class ListenerService
         var receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
         var receivedMessage = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
         var json = JsonNode.Parse(receivedMessage);
-        uid = (string)json["uid"];
+        if(json?["uid"] != null)
+            uid = (string)json["uid"]!;
     }
     
     public async Task<bool> NewBlock(Action<JsonNode>? callback = null)
@@ -48,8 +49,9 @@ public class ListenerService
                     await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 var receivedMessage = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
                 var json = JsonNode.Parse(receivedMessage);
-                if ((string) json["topic"] == "block")
-                    callback?.Invoke(json["data"]);
+                var topic = (string) json?["topic"]!;
+                if (topic == "block")
+                    callback?.Invoke(json?["data"]!);
             }
             return true;
         }
@@ -67,18 +69,29 @@ public class ListenerService
         await webSocket.SendAsync(new ArraySegment<byte>(body), WebSocketMessageType.Text, true, CancellationToken.None);
         try
         {
+            var buffer = new byte[4096];
+            var messageBuilder = new StringBuilder();
             while (webSocket.State == WebSocketState.Open)
             {
-                var buffer = new byte[4096];
                 var receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 var receivedMessage = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
-                var json = JsonNode.Parse(receivedMessage);
-                if((string)json["topic"] == "confirmedAdded/" + address)
-                    callback?.Invoke(json["data"]);
+                messageBuilder.Append(receivedMessage);
+                if (receiveResult.EndOfMessage)
+                {
+                    var fullMessage = messageBuilder.ToString();
+                    var json = JsonNode.Parse(fullMessage);
 
-                if (!token.IsCancellationRequested) continue;
-                Close();
-                return;
+                    var topic = (string) json?["topic"]!;
+                    if(topic == "confirmedAdded/" + address)
+                        callback?.Invoke(json?["data"]!);
+
+                    if (token.IsCancellationRequested)
+                    {
+                        Close();
+                        return;
+                    }
+                    messageBuilder.Clear();
+                }
             }
         }
         catch (OperationCanceledException)
@@ -88,7 +101,7 @@ public class ListenerService
         }
     }
     
-    public async Task Status(string address, CancellationToken token, Action<JsonNode> callback = null)
+    public async Task Status(string address, CancellationToken token, Action<JsonNode>? callback = null)
     {
         var body = Encoding.UTF8.GetBytes("{\"uid\":\"" + uid + "\", \"subscribe\":\"status/" + address + "\"}");
         await webSocket.SendAsync(new ArraySegment<byte>(body), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -100,8 +113,8 @@ public class ListenerService
                 var receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 var receivedMessage = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
                 var json = JsonNode.Parse(receivedMessage);
-                if((string)json["topic"] == "status/" + address)
-                    callback?.Invoke(json["data"]);
+                if((string)json?["topic"]! == "status/" + address)
+                    callback?.Invoke(json?["data"]!);
                 
                 if (!token.IsCancellationRequested) continue;
                 Close();
@@ -115,7 +128,7 @@ public class ListenerService
         }
     }
     
-    public async Task Unconfirmed(string address, Action<JsonNode> callback = null)
+    public async Task Unconfirmed(string address, Action<JsonNode>? callback = null)
     {
         var body = Encoding.UTF8.GetBytes("{\"uid\":\"" + uid + "\", \"subscribe\":\"unconfirmedAdded/" + address + "\"}");
         await webSocket.SendAsync(new ArraySegment<byte>(body), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -125,12 +138,12 @@ public class ListenerService
             var receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             var receivedMessage = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
             var json = JsonNode.Parse(receivedMessage);
-            if((string)json["topic"] == "unconfirmedAdded/" + address)
-                callback?.Invoke(json["data"]);
+            if((string)json?["topic"]! == "unconfirmedAdded/" + address)
+                callback?.Invoke(json?["data"]!);
         }
     }
     
-    public async Task AggregateBondedAdded(string address, Action<JsonNode> callback = null)
+    public async Task AggregateBondedAdded(string address, Action<JsonNode>? callback = null)
     {
         var body = Encoding.UTF8.GetBytes("{\"uid\":\"" + uid + "\", \"subscribe\":\"partialAdded/" + address + "\"}");
         await webSocket.SendAsync(new ArraySegment<byte>(body), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -140,12 +153,12 @@ public class ListenerService
             var receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             var receivedMessage = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
             var json = JsonNode.Parse(receivedMessage);
-            if((string)json["topic"] == "partialAdded/" + address)
-                callback?.Invoke(json["data"]);
+            if((string)json?["topic"]! == "partialAdded/" + address)
+                callback?.Invoke(json?["data"]!);
         }
     }
     
-    private async Task PartialRemoved(string address, Action<JsonNode> callback = null)
+    private async Task PartialRemoved(string address, Action<JsonNode>? callback = null)
     {
         var body = Encoding.UTF8.GetBytes("{\"uid\":\"" + uid + "\", \"subscribe\":\"partialRemoved/" + address + "\"}");
         await webSocket.SendAsync(new ArraySegment<byte>(body), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -155,12 +168,12 @@ public class ListenerService
             var receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             var receivedMessage = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
             var json = JsonNode.Parse(receivedMessage);
-            if((string)json["topic"] == "partialRemoved/" + address)
-                callback?.Invoke(json["data"]);
+            if((string)json?["topic"]! == "partialRemoved/" + address)
+                callback?.Invoke(json?["data"]!);
         }
     }
     
-    private async Task Cosignature(string address, Action<JsonNode> callback = null)
+    private async Task Cosignature(string address, Action<JsonNode>? callback = null)
     {
         var body = Encoding.UTF8.GetBytes("{\"uid\":\"" + uid + "\", \"subscribe\":\"cosignature/" + address + "\"}");
         await webSocket.SendAsync(new ArraySegment<byte>(body), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -170,8 +183,8 @@ public class ListenerService
             var receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             var receivedMessage = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
             var json = JsonNode.Parse(receivedMessage);
-            if((string)json["topic"] == "cosignature/" + address)
-                callback?.Invoke(json["data"]);
+            if((string)json?["topic"]! == "cosignature/" + address)
+                callback?.Invoke(json?["data"]!);
         }
     }
 
@@ -183,7 +196,7 @@ public class ListenerService
             return;
         }
         webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, reason, CancellationToken.None);
-        Console.WriteLine($@"Closed WebSocket connection. uid:{uid}");
+        Console.WriteLine($"Closed WebSocket connection. uid:{uid}");
         webSocket.Dispose();
     }
 }

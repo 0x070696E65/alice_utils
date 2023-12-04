@@ -1016,6 +1016,10 @@ public abstract class SymbolBuilderService
             Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET
         };
         var innerTransactions = Transaction.Transactions.Select(t => BuildTransactionFromInner(t.Value)).ToList();
+        foreach (var innerTransaction in innerTransactions)
+        {
+            innerTransaction.Network = aggTx.Network;
+        }
         var merkleHash = SymbolFacade.HashEmbeddedTransactions(innerTransactions.ToArray());
         aggTx.TransactionsHash = merkleHash;
         aggTx.Transactions = innerTransactions.ToArray();
@@ -1033,6 +1037,10 @@ public abstract class SymbolBuilderService
             Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET
         };
         var innerTransactions = Transaction.Transactions.Select(t => BuildTransactionFromInner(t.Value)).ToList();
+        foreach (var innerTransaction in innerTransactions)
+        {
+            innerTransaction.Network = aggTx.Network;
+        }
         var merkleHash = SymbolFacade.HashEmbeddedTransactions(innerTransactions.ToArray());
         aggTx.TransactionsHash = merkleHash;
         aggTx.Transactions = innerTransactions.ToArray();

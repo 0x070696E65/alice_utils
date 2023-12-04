@@ -1,0 +1,403 @@
+@page "/metal"
+@using BlazorStrap
+@using CatSdk.Symbol
+@using CatSdk.Utils
+@using aLice_utils.Client.Services
+@using System.Net.WebSockets
+@using System.Text
+@using System.Text.Json.Nodes
+@using CatSdk.Facade
+@using System.Globalization
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject WebSocketService WebSocketService
+
+<h3>Metal</h3>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">NetworkType</span>
+        <BSInputCheckbox CheckedValue="@("MainNet")" UnCheckedValue="@("TestNet")" IsToggle="true" Color="BSColor.Secondary" ValueChanged="@((string value) => OnNetworkTypeChanged(value))">
+            @NetworkType
+        </BSInputCheckbox>
+    </BSInputGroup>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Node</span>
+        <BSInput InputType="InputType.Text" placeholder="Node" @bind-Value="Node"/>
+    </BSInputGroup>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <BSInputFile IsRequired="true" ValidWhen="@(() => HasFile)" OnChange="OnFileChange"/>
+    </BSInputGroup>
+</BSRow>
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSCol>
+        <BSLabel>@fileName</BSLabel>
+    </BSCol>
+    <BSCol>
+        <BSLabel>@Size</BSLabel>
+    </BSCol>
+</BSRow>
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">PublicKey</span>
+        <BSInput InputType="InputType.Text" placeholder="PublicKey" @bind-Value="PublicKey"/>
+    </BSInputGroup>
+</BSRow>
+<BSRow MarginBottom="Margins.Medium">
+    <BSCol>
+        <BSButton OnClick="@OnForge" Color="BSColor.Primary">Forge</BSButton>
+    </BSCol>
+</BSRow>
+@if (IsForgeSpinner)
+{
+    <BSContainer>
+        <BSRow MarginBottom="Margins.Medium" Justify="Justify.Center">
+            <BSCol Column="2">
+                <BSSpinner Color="BSColor.Secondary" Class="align-content-center"/>
+            </BSCol>
+        </BSRow>
+    </BSContainer>
+}
+@if (isForged)
+{
+    <BSRow MarginBottom="Margins.Medium">
+        <BSCol>
+            <BSButton Color="BSColor.Success" OnClick="@OpenAlice">To aLice</BSButton>
+        </BSCol>
+    </BSRow>
+
+    <BSRow MarginBottom="Margins.Medium">
+        <BSInputGroup>
+            <span class="@BS.Input_Group_Text">MetalID</span>
+            <BSInput IsDisabled="true" InputType="InputType.Text" placeholder="MetalID" @bind-Value="metalId"/>
+            <BSButton Color="BSColor.Secondary" OnClick='()=>CopyToClipboard(metalId)'>
+                <i class="fas fa-clipboard"></i>
+            </BSButton>
+        </BSInputGroup>
+        <BSCol>
+            <BSLabel>@Fees</BSLabel>
+        </BSCol>
+    </BSRow>
+    <BSRow MarginBottom="Margins.Medium">
+        <BSCol>
+            <BSButton OnClick="@OnConnect" Color="BSColor.Primary">Connect</BSButton>
+        </BSCol>
+    </BSRow>
+    
+}
+
+@if (IsSpinner)
+{
+    <BSContainer>
+        <BSRow MarginBottom="Margins.Medium" Justify="Justify.Center">
+            <BSCol Column="2">
+                <BSSpinner Color="BSColor.Secondary" Class="align-content-center"/>
+            </BSCol>
+        </BSRow>
+    </BSContainer>
+}
+
+@if (isAnnouceSuccessed)
+{
+    <BSRow MarginBottom="Margins.Medium">
+        <BSCol>
+            <BSLabel Class="text-info">Announce Succeeded!!</BSLabel>
+        </BSCol>
+    </BSRow>
+    <BSRow MarginBottom="Margins.Medium">
+        <BSCol>
+            <BSImage Source="@base64" Style="width: 100%;" />
+        </BSCol>
+    </BSRow>
+}
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSCol>
+        <BSLabel Class="text-danger">@errorMessage</BSLabel>
+    </BSCol>
+</BSRow>
+
+<BSRow MarginBottom="Margins.Medium">
+    <BSCol>
+        <BSLabel Style="font-size: 12px;">
+            ※本アプリはテスト版です。テストネットでの使用を推奨します。本アプリにおけるトラブル等は一切責任を取りません。<br/>
+            ※あくまでもお遊び程度なアプリです、ご理解いただける場合のみ使用してください<br/>
+            ※サイズが大きいと不具合がある可能性があります。できれば100kb以下程度のファイルでの使用をおすすめします。<br/>
+            ※アカウントメタデータ、かつソースとターゲットの公開鍵が同じ場合のみ使用できます（意味不明な場合は気にしなくてOK）<br/>
+            <br/>
+            ■使用方法<br/>
+            - ファイルを選択し、公開鍵を設定して[Forge]をタップしてください<br/>
+            - [To aLice]をタップしaLiceで署名してください。※設定した公開鍵と同じアカウント<br/>
+            - このページに戻り[Connect]をタップしてください<br/>
+            - ファイルがjpgがpngであればそのまま画像が表示されます<br/>
+        </BSLabel>
+    </BSCol>
+</BSRow>
+@code {
+    private bool HasFile { get; set; }
+    private string? PublicKey { get; set; }
+    private string? address { get; set; }
+    private string? fileName { get; set; }
+    private byte[]? FileContent { get; set; }
+    private bool isForged = false;
+    private bool isAnnouceSuccessed = false;
+    private string? alice = null;
+    private string? metalId = null;
+    private string? uid;
+    private string? Node;
+    private bool IsSpinner = false;
+    private bool IsForgeSpinner = false;
+    private string? NetworkType;
+    
+    private string hashes = "";
+
+    private string? receivedMessage;
+    private string? responceMessage;
+
+    private string? base64;
+    private string? Size;
+    private string? Fees;
+    
+    private MetalService? MetalService;
+    private SymbolService? SymbolService;
+    private readonly NodeServices NodeServices = new NodeServices();
+    
+    private List<Result>? results = new ();
+    
+    private string? errorMessage;
+    
+    protected override async void OnInitialized()
+    {
+        await base.OnInitializedAsync();
+        var uri = new Uri(NavigationManager.Uri);
+        var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        uid = queryParameters.Get("uid") ?? Guid.NewGuid().ToString();
+        await OnNetworkTypeChanged("TestNet");
+        StateHasChanged();
+    }
+
+    private async void OnConnect()
+    {
+        IsSpinner = true;
+        await WebSocketService.ConnectAsync("wss://alice-ws.fly.dev");
+        var idData = new { id = uid };
+        WebSocketService.Received += OnReceive;
+        await WebSocketService.SendAsync(idData);
+        await Task.Delay(1000);
+    }
+    
+    private async void OnFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.GetMultipleFiles().FirstOrDefault();
+        if (file != null)
+        {
+            await using (var stream = file.OpenReadStream())
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await stream.CopyToAsync(memoryStream);
+                    FileContent = memoryStream.ToArray();
+                }
+            }
+
+            HasFile = true;
+            fileName = file.Name;
+            Size = file.Size + "byte";
+        }
+        else
+        {
+            HasFile = false;
+        }
+        StateHasChanged();
+    }
+    
+    private async void OnForge()
+    {
+        IsForgeSpinner = true;
+        var config = new SymbolServiceConfig(Node);
+        SymbolService = new SymbolService(config);
+        await SymbolService.Init();
+        MetalService = new MetalService(SymbolService);
+        var networkType = NetworkType == "MainNet" ? Network.MainNet : Network.TestNet;
+        var facade = new SymbolFacade(networkType);
+        address = facade.Network.PublicKeyToAddress(Converter.HexToBytes(PublicKey)).ToString();
+        
+        var publicKey = new PublicKey(Converter.HexToBytes(PublicKey));
+        var (key, txs, additive) = await MetalService.CreateForgeTxs(publicKey, publicKey, FileContent, false);
+        var dummy = SymbolService.BuildAggregateCompleteTxBatches(txs, new PublicKey(Converter.HexToBytes(PublicKey)));
+        
+        var fees = dummy.Aggregate<AggregateCompleteTransactionV2?, ulong>(0, (current, aggregateCompleteTransactionV2) => current + aggregateCompleteTransactionV2.Fee.Value);
+        Fees = (((double)fees) / 1000000).ToString(CultureInfo.InvariantCulture);
+        metalId = MetalService.CalculateMetalId(MetadataType.Account, publicKey, publicKey, key);
+        var hosturl = await (await Http.GetAsync("SendMetal?type=host_url")).Content.ReadAsStringAsync();
+        var callbackURL = $"{hosturl}/SendMetal?uid={uid}&node={Converter.Utf8ToHex(Node)}";
+        alice = $"alice://sign?type=request_sign_batches&method=post&callback={Converter.Utf8ToHex(callbackURL)}";
+        for(var i = 0; i < txs.Count; i++)
+        {
+            alice += $"&batch{i}={Converter.BytesToHex(txs[i].Serialize())}";
+        }
+        isForged = true;
+        IsForgeSpinner = false;
+        StateHasChanged();
+    }
+    
+    private void OpenAlice()
+    {
+        if (alice != null) NavigationManager.NavigateTo(alice);
+    }
+    
+    private void OnReceive(string m)
+    {
+        try
+        {
+            Console.WriteLine("Received message: " + m);
+            HashCheck(m);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+
+    private async void HashCheck(string hashs)
+    {
+        if (results == null) throw new Exception("results is null");
+        
+        if (Node == null) throw new Exception("Node is null");
+        if (address == null) throw new Exception("address is null");
+        var hashArray = hashs.Split("_");
+
+        foreach (var hash in hashArray)
+        {
+            var r = new Result
+            {
+                hash = hash
+            };
+            results.Add(r);
+        }
+        foreach (var r in results)
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var token = cancellationTokenSource.Token;
+            using var w = new ClientWebSocket();
+            var websocket = new ListenerService(Node, w);
+            using var w2 = new ClientWebSocket();
+            var websocket2 = new ListenerService(Node, w2);
+
+            try
+            {
+                var jsonString = await NodeServices.GetDataFromApi(Node, $"/transactionStatus/{r.hash}");
+                var json = JsonNode.Parse(jsonString);
+                if ((string) json?["code"]! == "Success" && (string) json?["group"]! == "confirmed")
+                {
+                    r.status = Status.Success;
+                    await CheckStatus();
+                    return;
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+            await websocket.Open();
+            var confirmedTask = websocket.Confirmed(address, token, async (tx) =>
+            {
+                if ((string) tx["meta"]?["hash"]! == r.hash)
+                {
+                    r.status = Status.Success;
+                    websocket.Close();
+                    await CheckStatus();
+                }
+                if (token.IsCancellationRequested)
+                {
+                    websocket.Close();
+                }
+            });
+            await websocket2.Open();
+            var statusTask = websocket2.Status(address, token, async (n) =>
+            {
+                if (token.IsCancellationRequested)
+                {
+                    websocket2.Close();
+                    return;
+                }
+                websocket2.Close();
+                r.status = Status.Error;
+                r.code = (string) n["code"]!;
+                await CheckStatus();
+            });
+            await Task.WhenAll(confirmedTask, statusTask);
+        }
+    }
+    
+    private async Task CheckStatus()
+    {
+        if (results.All(x => x.status == Status.Success))
+        {
+            isAnnouceSuccessed = true;
+            StateHasChanged();
+            await Task.Delay(2000);
+            OnFetch();
+        }
+        if(results.Find(x=> x.status == Status.Error) != null)
+        {
+            isAnnouceSuccessed = false;
+            errorMessage = results.Find(x=> x.status == Status.Error)!.code;
+            IsSpinner = false;
+            StateHasChanged();
+        }
+    }
+    
+    private async void OnFetch()
+    {
+        var config = new SymbolServiceConfig(Node);
+        SymbolService = new SymbolService(config);
+        await SymbolService.Init();
+        MetalService = new MetalService(SymbolService);
+        var (data, sourceAddress, targetAddress, key) = await MetalService.FetchByMetalId(metalId);
+        var b = Encoding.UTF8.GetString(data);
+        var imageData = Convert.FromBase64String(b);
+        var imageFormat = "unknown";
+        if (imageData[0] == 0xFF && imageData[1] == 0xD8)
+        {
+            imageFormat = "jpeg";
+        }
+        else if (imageData[0] == 0x89 && imageData[1] == 0x50 && imageData[2] == 0x4E && imageData[3] == 0x47)
+        {
+            imageFormat = "png";
+        }
+        base64 = $"data:image/{imageFormat};base64,{b}";
+        IsSpinner = false;
+        StateHasChanged();
+    }
+    
+    private async Task OnNetworkTypeChanged(string newValue)
+    {
+        NetworkType = newValue;
+        Node = await NodeServices.GetNode(NetworkType);
+        StateHasChanged();
+    }
+    
+    private async Task CopyToClipboard(string? text)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+    }
+    
+    private class Result
+    {
+        public string hash { get; set; }
+        public Status status { get; set; }
+        public string code { get; set; }
+    }
+    
+    private enum Status
+    {
+        Success,
+        Error
+    }
+}

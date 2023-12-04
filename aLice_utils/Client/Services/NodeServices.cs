@@ -82,4 +82,22 @@ public class NodeServices
         var response = await client.PutAsync(node + "/transactions", content);
         return await response.Content.ReadAsStringAsync();
     }
+    
+    public static async Task<string> GetDataFromApi(string _node, string _param)
+    {
+        var url = $"{_node}{_param}";
+        using var client = new HttpClient();
+        try
+        {
+            var response = await client.GetAsync(url);
+
+            if (response.IsSuccessStatusCode) {
+                return await response.Content.ReadAsStringAsync();
+            }
+            throw new Exception($"Error: {response.StatusCode}");
+        }
+        catch (Exception ex) {
+            throw new Exception(ex.Message);
+        }
+    }
 }

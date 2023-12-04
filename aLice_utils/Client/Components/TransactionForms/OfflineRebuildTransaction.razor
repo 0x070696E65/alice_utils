@@ -50,7 +50,6 @@
             
             var inner = new InnerCosignatureTransaction()
             {
-                SignerPublicKey = Converter.BytesToHex(aggtxTransaction.SignerPublicKey.bytes),
                 Hash = hash,
             };
             InnerTransaction.Transactions.Add(inner);

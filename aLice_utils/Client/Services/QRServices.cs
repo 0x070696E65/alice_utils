@@ -11,7 +11,7 @@ public class QRServices
         {
             using var ms = new MemoryStream();
             var qrCodeGenerate = new QRCodeGenerator();
-            var qrCodeData = qrCodeGenerate.CreateQrCode(url, QRCodeGenerator.ECCLevel.Q);
+            var qrCodeData = qrCodeGenerate.CreateQrCode(url, QRCodeGenerator.ECCLevel.L);
             var pngByteQRCode = new PngByteQRCode(qrCodeData);
             var base64 = Convert.ToBase64String(pngByteQRCode.GetGraphic(10));
             return $"data:image/png;base64,{base64}";

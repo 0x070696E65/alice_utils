@@ -87,6 +87,7 @@
             {
                 builder.OpenComponent(localCounter, Type.GetType($"aLice_utils.Client.Components.TransactionForms.{option}") ?? throw new InvalidOperationException());
                 builder.AddAttribute(localCounter, "InnerTransaction", tx);
+                builder.AddAttribute(localCounter, "TransactionMeta", TransactionMeta);
                 builder.AddAttribute(localCounter, "IsInner", true);
                 builder.CloseElement();
             }

@@ -1,0 +1,69 @@
+@page "/websocket-example"
+@using aLice_utils.Client.Services
+@inject WebSocketService WebSocketService
+
+<h3>WebSocket Example</h3>
+
+<button @onclick="Connect">Connect</button>
+<button @onclick="Disconnect">Disconnect</button>
+<br />
+<input @bind="message" placeholder="Type a message" />
+<br />
+<input @bind="uid" placeholder="uid" />
+<button @onclick="SendUid">Send Uid</button>
+<button @onclick="SendMessage">Send Message</button>
+<button @onclick="SendMismatchMessage">Send Mismatch</button>
+<br />
+<div>
+    <strong>Received Message:</strong> @receivedMessage
+</div>
+
+@code {
+    private string? message;
+    private string? uid;
+    private string? receivedMessage;
+
+    private async Task Connect()
+    {
+        await WebSocketService.ConnectAsync("wss://alice-ws.fly.dev");
+        //await WebSocketService.ConnectAsync("ws://localhost:3000");
+        Console.WriteLine("Connecting...");
+    }
+
+    private async Task Disconnect()
+    {
+        Console.WriteLine("Disconnecting...");
+        await WebSocketService.DisconnectAsync();
+    }
+
+    private async Task SendMessage()
+    {
+        var messageData = new { targetId = uid, message };
+        await WebSocketService.SendAsync(messageData);
+    }
+    
+    private async Task SendMismatchMessage()
+    {
+        var messageData = new { targetId = "mismatchId", message };
+        await WebSocketService.SendAsync(messageData);
+    }
+    
+    private async Task SendUid()
+    {
+        var idData = new { id = uid };
+        await WebSocketService.SendAsync(idData);
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        WebSocketService.Received += OnReceive;
+        return Task.CompletedTask;
+    }
+
+    private void OnReceive(string m)
+    {
+        Console.WriteLine("Received message: " + m);
+        receivedMessage = m;
+        StateHasChanged();
+    }
+}

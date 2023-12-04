@@ -106,10 +106,10 @@
             var websocket2 = new ListenerService(node, w2);
             
             await websocket.Open();
-            var confirmedTask = websocket.Confirmed(address, token, async (tx) =>
+            var confirmedTask = websocket.Confirmed(address, token, (_tx) =>
             {
                 Console.WriteLine("CONFIRMED");
-                if ((string)tx["meta"]?["hash"] == offlineRebuildTransaction.Hash)
+                if ((string)_tx["meta"]?["hash"]! == offlineRebuildTransaction.Hash)
                 {
                     Console.WriteLine("トランザクションが承認されました");
                     showSpinner = false;
@@ -117,12 +117,11 @@
                     offlineAnnounceResult = "トランザクションが承認されました";
                     websocket.Close();
                     StateHasChanged();
-                };
+                }
                 if (token.IsCancellationRequested)
                 {
                     websocket.Close();
                     StateHasChanged();
-                    return;
                 }
             });
             
@@ -148,6 +147,7 @@
         else
         {
             var tx = SymbolBuilderService.BuildTransaction(Transaction, false);
+            Console.WriteLine(tx);
             if (Transaction.GetType() == typeof(AggregateCompleteTransaction) || Transaction.GetType() == typeof(AggregateBondedTransaction))
             {
                 var aggTx = (IAggregateTransaction) Transaction;
