@@ -52,9 +52,7 @@ public class SendMetalController : ControllerBase
                     var facade = new SymbolFacade(network);
                     var hash = facade.HashTransaction(tx);
                     hashes.Add(Converter.BytesToHex(hash.bytes));
-                    /*var messageData = new { targetId = uid, message = Converter.BytesToHex(hash.bytes)};
-                
-                    await webSocketService.SendAsync(messageData);*/
+                    Console.WriteLine(Converter.BytesToHex(hash.bytes));
                     await NodeServices.Announce(node, signed);
                 }
                 catch

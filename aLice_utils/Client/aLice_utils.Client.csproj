@@ -18,7 +18,7 @@
     <PackageReference Include="BlazorStrap.Extensions.FluentValidation" Version="2.0.1" />
     <PackageReference Include="BlazorStrap.V5" Version="5.2.100-Preview3b" />
     <PackageReference Include="CatSdk" Version="1.0.7" />
-    <PackageReference Include="MetalOnSymbol" Version="1.0.0" />
+    <PackageReference Include="MetalOnSymbol" Version="1.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.5" PrivateAssets="all" />
     <PackageReference Include="QRCoderNetCore" Version="1.0.0" />
