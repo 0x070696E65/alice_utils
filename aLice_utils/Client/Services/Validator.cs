@@ -1,4 +1,5 @@
 using aLice_utils.Client.Extensions;
+using aLice_utils.Client.Pages;
 using aLice_utils.Shared.Models;
 using aLice_utils.Shared.Models.Transaction;
 using FluentValidation;
@@ -7,6 +8,25 @@ namespace aLice_utils.Client.Services;
 
 public abstract class Validator
 {
+    public class VerifyValidator : AbstractValidator<Verify.VerifyModel>
+    {
+        public VerifyValidator()
+        {
+            RuleFor(verify => verify.PublicKey).IsXCharacters(64).IsHex();
+            RuleFor(verify => verify.Message).NotEmpty();
+            RuleFor(verify => verify.Hash).NotEmpty();
+        }
+    }
+    
+    public class VerifyMessageValidator : AbstractValidator<Verify.VerifyMessageModel>
+    {
+        public VerifyMessageValidator()
+        {
+            RuleFor(verify => verify.PublicKey).NotEmpty().IsXCharacters(64).IsHex();
+            RuleFor(verify => verify.Message).NotEmpty();
+        }
+    }
+    
     private class TransactionMetaValidator : AbstractValidator<TransactionMeta>
     {
         public TransactionMetaValidator()

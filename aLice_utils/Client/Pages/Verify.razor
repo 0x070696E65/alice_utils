@@ -1,0 +1,193 @@
+@page "/verify"
+@using BlazorStrap
+@using aLice_utils.Client.Services
+@using CatSdk.Symbol
+@using CatSdk.Utils
+@using BlazorStrap.Extensions.FluentValidation
+@using Org.BouncyCastle.Crypto
+@using Org.BouncyCastle.Crypto.Parameters
+@using Org.BouncyCastle.Crypto.Signers
+@using System.Text
+@using System.Text.Json
+@inject NavigationManager NavigationManager
+
+<h3>Verify</h3>
+<BSRow MarginBottom="Margins.Medium">
+    <BSInputGroup>
+        <span class="@BS.Input_Group_Text">Mode</span>
+        <BSInputCheckbox CheckedValue="@("Verify")" UnCheckedValue="@("Sign")" IsToggle="true" Color="BSColor.Secondary" ValueChanged="@((string value) => OnModeChanged(value))">
+            @mode
+        </BSInputCheckbox>
+    </BSInputGroup>
+</BSRow>
+@if (mode != "Sign")
+{
+    <BSForm Model="Model" OnValidSubmit="OnVerify">
+        <FluentValidator TValidator="Validator.VerifyValidator"/>
+        <BSRow MarginBottom="Margins.Medium">
+            <BSInputGroup>
+                <span class="@BS.Input_Group_Text">PublicKey</span>
+                <BSInput InputType="InputType.Text" placeholder="PublicKey" @bind-Value="Model.PublicKey"/>
+            </BSInputGroup>
+            <ValidationMessage For="@(() => Model.PublicKey)" />
+        </BSRow>
+        <BSRow MarginBottom="Margins.Medium">
+            <BSInputGroup>
+                <span class="@BS.Input_Group_Text">Message</span>
+                <BSInput InputType="InputType.TextArea" placeholder="Message" @bind-Value="Model.Message"/>
+            </BSInputGroup>
+            <ValidationMessage For="@(() => Model.Message)" />
+        </BSRow>
+        <BSRow MarginBottom="Margins.Medium">
+            <BSInputGroup>
+                <span class="@BS.Input_Group_Text">Hash</span>
+                <BSInput InputType="InputType.Text" placeholder="Hash" @bind-Value="Model.Hash"/>
+            </BSInputGroup>
+            <ValidationMessage For="@(() => Model.Hash)" />
+        </BSRow>
+        <BSRow MarginBottom="Margins.Medium">
+            <BSCol>
+                <BSInputGroup MarginBottom="Margins.Medium">
+                    <BSButton IsSubmit="true" Color="BSColor.Primary">Submit</BSButton>
+                </BSInputGroup>
+            </BSCol>
+        </BSRow>
+    </BSForm>
+    @if (isVerified)
+    {
+        <BSRow MarginBottom="Margins.Medium">
+            <BSInputGroup MarginBottom="Margins.Medium">
+                <BSLabel>
+                    @verifyResult
+                </BSLabel>
+            </BSInputGroup>
+        </BSRow>   
+    }
+}
+else
+{
+    <BSForm Model="MessageModel" OnValidSubmit="OnGenerateURL">
+        <FluentValidator TValidator="Validator.VerifyMessageValidator"/>
+        <BSRow MarginBottom="Margins.Medium">
+            <BSInputGroup>
+                <span class="@BS.Input_Group_Text">PublicKey</span>
+                <BSInput InputType="InputType.Text" placeholder="空欄の場合はaLiceのメインアカウントが設定されます" @bind-Value="MessageModel.PublicKey"/>
+            </BSInputGroup>
+            <ValidationMessage For="@(() => MessageModel.PublicKey)" />
+        </BSRow>
+        <BSRow MarginBottom="Margins.Medium">
+            <BSInputGroup>
+                <span class="@BS.Input_Group_Text">Message</span>
+                <BSInput InputType="InputType.TextArea" placeholder="Message" @bind-Value="MessageModel.Message"/>
+            </BSInputGroup>
+            <ValidationMessage For="@(() => MessageModel.Message)" />
+        </BSRow>
+        <BSRow MarginBottom="Margins.Medium">
+            <BSCol>
+                <BSInputGroup MarginBottom="Margins.Medium">
+                    <BSButton IsSubmit="true" Color="BSColor.Primary">Submit</BSButton>
+                </BSInputGroup>
+            </BSCol>
+        </BSRow>
+    </BSForm>
+    @if (isCratedAlice)
+    {
+        <BSRow MarginBottom="Margins.Medium">
+            <BSInputGroup MarginBottom="Margins.Medium">
+                <BSButton OnClick="@ToAlice" Color="BSColor.Success">To aLice</BSButton>
+            </BSInputGroup>
+        </BSRow>
+        <BSRow MarginBottom="Margins.Medium">
+            <BSInputGroup>
+                <span class="@BS.Input_Group_Text">URL</span>
+                <BSInput InputType="InputType.TextArea" placeholder="URL" @bind-Value="alice"/>
+                <BSButton Color="BSColor.Secondary" OnClick='()=>CopyToClipboard(alice)'>
+                    <i class="fas fa-clipboard"></i>
+                </BSButton>
+            </BSInputGroup>
+        </BSRow>
+        <BSRow MarginBottom="Margins.Medium">
+            <BSImage Source="@qrSource" Class="img-fluid"></BSImage>
+        </BSRow>
+    }
+}
+
+@code {
+    private string mode = "Sign";
+    
+    public VerifyModel Model { get; } = new ();
+    public VerifyMessageModel MessageModel { get; } = new ();
+
+    private string? alice { get; set; }
+    private bool isCratedAlice { get; set; }
+    private bool isVerified { get; set; }
+    
+    private string? verifyResult { get; set; }
+    private string? qrSource { get; set; }
+    
+    private void OnModeChanged(string newValue)
+    {
+        mode = newValue;
+        StateHasChanged();
+    }
+    
+    private async void OnGenerateURL()
+    {
+        alice = $"alice://sign?type=request_sign_utf8&data={Converter.Utf8ToHex(MessageModel.Message)}";
+        if(MessageModel.PublicKey != "") alice += $"&set_public_key={MessageModel.PublicKey}";
+        qrSource = await QRServices.GenerateQR(alice);
+        isCratedAlice = true;
+        StateHasChanged();
+    }
+    
+    private async void OnVerify()
+    {
+        try
+        {
+            var hostUrl = NavigationManager.BaseUri;
+            
+            using var client = new HttpClient();
+            var dic = new Dictionary<string, string>()
+            {
+                {"message", Model.Message},
+                {"hash", Model.Hash},
+                {"public_key", Model.PublicKey},
+            };
+            var content = new StringContent(JsonSerializer.Serialize(dic), Encoding.UTF8, "application/json");
+            var response = await client.PostAsync(hostUrl + "CheckVerify", content);
+            var res = await response.Content.ReadAsStringAsync();
+            verifyResult = res == "true" ? "Verify Success!!!" : "Verify Failed...";
+            isVerified = true;
+            StateHasChanged();     
+        } 
+        catch (Exception e)
+        {
+            verifyResult = e.Message;
+            isVerified = true;
+            StateHasChanged();
+        }
+    }
+    
+    private void ToAlice()
+    {
+        if (alice != null) NavigationManager.NavigateTo(alice);
+    }
+    
+    private async Task CopyToClipboard(string? text)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+    }
+    
+    public class VerifyModel
+    {
+        public string PublicKey { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string Hash { get; set; } = "";
+    }
+    
+    public class VerifyMessageModel
+    {
+        public string PublicKey { get; set; } = "";
+        public string Message { get; set; } = "";
+    }
+}
