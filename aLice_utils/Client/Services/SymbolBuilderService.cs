@@ -1,9 +1,12 @@
 using System.Text;
+using System.Text.Json.Nodes;
 using aLice_utils.Shared.Models.Transaction;
 using CatSdk.Facade;
 using CatSdk.Symbol;
 using CatSdk.Utils;
+using Newtonsoft.Json;
 using IBaseTransaction = CatSdk.Symbol.IBaseTransaction;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 using NETWORKTYPE = CatSdk.Symbol.NetworkType;
 
 namespace aLice_utils.Client.Services;
@@ -68,33 +71,33 @@ public abstract class SymbolBuilderService
         { "MosaicGlobalRestrictionTransaction", () => new InnerMosaicGlobalRestrictionTransaction() },
     };
 
-    private static readonly Dictionary<Type, Func<aLice_utils.Shared.Models.Transaction.IBaseTransaction, bool, IBaseTransaction>> TransactionBuilders = new()
+    private static readonly Dictionary<Type, Func<aLice_utils.Shared.Models.Transaction.IBaseTransaction, bool, Task<IBaseTransaction>>> TransactionBuilders = new()
     {
-        { typeof(TransferTransaction), (t, b) => BuildTransferTransaction((TransferTransaction)t, b) },
-        { typeof(MosaicDefinitionTransaction), (t, b) => BuildMosaicDefinitionTransaction((MosaicDefinitionTransaction)t, b) },
-        { typeof(MosaicSupplyChangeTransaction), (t, b) => BuildMosaicSupplyChangeTransaction((MosaicSupplyChangeTransaction)t, b) },
-        { typeof(MosaicSupplyRevocationTransaction), (t, b) => BuildMosaicSupplyRevocationTransaction((MosaicSupplyRevocationTransaction)t, b) },
-        { typeof(AccountKeyLinkTransaction), (t, b) => BuildAccountKeyLinkTransaction((AccountKeyLinkTransaction)t, b) },
-        { typeof(NodeKeyLinkTransaction), (t, b) => BuildNodeKeyLinkTransaction((NodeKeyLinkTransaction)t, b) },
-        { typeof(VotingKeyLinkTransaction), (t, b) => BuildVotingKeyLinkTransaction((VotingKeyLinkTransaction)t, b) },
-        { typeof(VrfKeyLinkTransaction), (t, b) => BuildVrfKeyLinkTransaction((VrfKeyLinkTransaction)t, b) },
-        { typeof(HashLockTransaction), (t, b) => BuildHashLockTransaction((HashLockTransaction)t, b) },
-        { typeof(SecretLockTransaction), (t, b) => BuildSecretLockTransaction((SecretLockTransaction)t, b) },
-        { typeof(SecretProofTransaction), (t, b) => BuildSecretProofTransaction((SecretProofTransaction)t, b) },
-        { typeof(AccountMetadataTransaction), (t, b) => BuildAccountMetadataTransaction((AccountMetadataTransaction)t, b) },
-        { typeof(MosaicMetadataTransaction), (t, b) => BuildMosaicMetadataTransaction((MosaicMetadataTransaction)t, b) },
-        { typeof(NamespaceMetadataTransaction), (t, b) => BuildNamespaceMetadataTransaction((NamespaceMetadataTransaction)t, b) },
-        { typeof(MultisigAccountModificationTransaction), (t, b) => BuildMultisigAccountModificationTransaction((MultisigAccountModificationTransaction)t, b) },
-        { typeof(AddressAliasTransaction), (t, b) => BuildAddressAliasTransaction((AddressAliasTransaction)t, b) },
-        { typeof(MosaicAliasTransaction), (t, b) => BuildMosaicAliasTransaction((MosaicAliasTransaction)t, b) },
-        { typeof(NamespaceRegistrationTransaction), (t, b) => BuildNamespaceRegistrationTransaction((NamespaceRegistrationTransaction)t, b) },
-        { typeof(AccountAddressRestrictionTransaction), (t, b) => BuildAccountAddressRestrictionTransaction((AccountAddressRestrictionTransaction)t, b) },
-        { typeof(AccountMosaicRestrictionTransaction), (t, b) => BuildAccountMosaicRestrictionTransaction((AccountMosaicRestrictionTransaction)t, b) },
-        { typeof(AccountOperationRestrictionTransaction), (t, b) => BuildAccountOperationRestrictionTransaction((AccountOperationRestrictionTransaction)t, b) },
-        { typeof(MosaicAddressRestrictionTransaction), (t, b) => BuildMosaicAddressRestrictionTransaction((MosaicAddressRestrictionTransaction)t, b) },
-        { typeof(MosaicGlobalRestrictionTransaction), (t, b) => BuildMosaicGlobalRestrictionTransaction((MosaicGlobalRestrictionTransaction)t, b) },
-        { typeof(AggregateCompleteTransaction), (t, b) => BuildAggregateCompleteTransaction((AggregateCompleteTransaction)t) },
-        { typeof(AggregateBondedTransaction), (t, b) => BuildAggregateBondedTransaction((AggregateBondedTransaction)t) },
+        { typeof(TransferTransaction), (t, b) => Task.FromResult(BuildTransferTransaction((TransferTransaction)t, b)) },
+        { typeof(MosaicDefinitionTransaction), (t, b) => Task.FromResult(BuildMosaicDefinitionTransaction((MosaicDefinitionTransaction)t, b)) },
+        { typeof(MosaicSupplyChangeTransaction), (t, b) => Task.FromResult(BuildMosaicSupplyChangeTransaction((MosaicSupplyChangeTransaction)t, b)) },
+        { typeof(MosaicSupplyRevocationTransaction), (t, b) => Task.FromResult(BuildMosaicSupplyRevocationTransaction((MosaicSupplyRevocationTransaction)t, b)) },
+        { typeof(AccountKeyLinkTransaction), (t, b) => Task.FromResult(BuildAccountKeyLinkTransaction((AccountKeyLinkTransaction)t, b)) },
+        { typeof(NodeKeyLinkTransaction), (t, b) => Task.FromResult(BuildNodeKeyLinkTransaction((NodeKeyLinkTransaction)t, b)) },
+        { typeof(VotingKeyLinkTransaction), (t, b) => Task.FromResult(BuildVotingKeyLinkTransaction((VotingKeyLinkTransaction)t, b)) },
+        { typeof(VrfKeyLinkTransaction), (t, b) => Task.FromResult(BuildVrfKeyLinkTransaction((VrfKeyLinkTransaction)t, b)) },
+        { typeof(HashLockTransaction), (t, b) => Task.FromResult(BuildHashLockTransaction((HashLockTransaction)t, b)) },
+        { typeof(SecretLockTransaction), (t, b) => Task.FromResult(BuildSecretLockTransaction((SecretLockTransaction)t, b)) },
+        { typeof(SecretProofTransaction), (t, b) => Task.FromResult(BuildSecretProofTransaction((SecretProofTransaction)t, b)) },
+        { typeof(AccountMetadataTransaction),  (t, b) => Task.FromResult(BuildAccountMetadataTransaction((AccountMetadataTransaction)t, b)) },
+        { typeof(MosaicMetadataTransaction), (t, b) => Task.FromResult(BuildMosaicMetadataTransaction((MosaicMetadataTransaction)t, b)) },
+        { typeof(NamespaceMetadataTransaction), (t, b) => Task.FromResult(BuildNamespaceMetadataTransaction((NamespaceMetadataTransaction)t, b)) },
+        { typeof(MultisigAccountModificationTransaction), (t, b) => Task.FromResult(BuildMultisigAccountModificationTransaction((MultisigAccountModificationTransaction)t, b)) },
+        { typeof(AddressAliasTransaction), (t, b) => Task.FromResult(BuildAddressAliasTransaction((AddressAliasTransaction)t, b)) },
+        { typeof(MosaicAliasTransaction), (t, b) => Task.FromResult(BuildMosaicAliasTransaction((MosaicAliasTransaction)t, b)) },
+        { typeof(NamespaceRegistrationTransaction), (t, b) => Task.FromResult(BuildNamespaceRegistrationTransaction((NamespaceRegistrationTransaction)t, b)) },
+        { typeof(AccountAddressRestrictionTransaction), (t, b) => Task.FromResult(BuildAccountAddressRestrictionTransaction((AccountAddressRestrictionTransaction)t, b)) },
+        { typeof(AccountMosaicRestrictionTransaction), (t, b) => Task.FromResult(BuildAccountMosaicRestrictionTransaction((AccountMosaicRestrictionTransaction)t, b)) },
+        { typeof(AccountOperationRestrictionTransaction), (t, b) => Task.FromResult(BuildAccountOperationRestrictionTransaction((AccountOperationRestrictionTransaction)t, b)) },
+        { typeof(MosaicAddressRestrictionTransaction), (t, b) => Task.FromResult(BuildMosaicAddressRestrictionTransaction((MosaicAddressRestrictionTransaction)t, b)) },
+        { typeof(MosaicGlobalRestrictionTransaction), (t, b) => Task.FromResult(BuildMosaicGlobalRestrictionTransaction((MosaicGlobalRestrictionTransaction)t, b)) },
+        { typeof(AggregateCompleteTransaction), async (t, b) => await BuildAggregateCompleteTransaction((AggregateCompleteTransaction)t) },
+        { typeof(AggregateBondedTransaction), async (t, b) => await BuildAggregateBondedTransaction((AggregateBondedTransaction)t) },
     };
 
     public static object CreateTransactionInstance(string transactionType, bool isInnerTransaction = false)
@@ -111,16 +114,105 @@ public abstract class SymbolBuilderService
             if (TransactionInstanceBuilders.TryGetValue(transactionType, out var createFunction))
             {
                 return createFunction();
-            }   
+            }
         }
         throw new Exception("Transaction type not implemented");
     }
 
-    public static IBaseTransaction BuildTransaction(aLice_utils.Shared.Models.Transaction.IBaseTransaction transaction, bool b)
+    private static async Task RebuildMetadataInfo(BaseTransaction Transaction)
     {
+        if(Transaction.GetType() == typeof(AccountMetadataTransaction))
+        {
+            var transaction = (AccountMetadataTransaction)Transaction;
+            var newValue = Converter.Utf8ToBytes(transaction.InnerTransaction.Value);
+            if (Converter.IsHexString(transaction.InnerTransaction.ScopedMetadataKey))
+            {
+                var json = await NodeServices.GetDataFromApi(transaction.InnerTransaction.Node, $"/metadata?scopedMetadataKey={transaction.InnerTransaction.ScopedMetadataKey}&targetAddress={transaction.InnerTransaction.TargetAddress}");
+                var s = JsonNode.Parse(json);
+                if (s?["data"][0]["metadataEntry"]["value"] != null)
+                {
+                    var currentValue = Converter.HexToBytes((string)s["data"][0]["metadataEntry"]?["value"]);
+                    transaction.InnerTransaction.UlongScopedMetadataKey = ulong.Parse(transaction.InnerTransaction.ScopedMetadataKey, System.Globalization.NumberStyles.HexNumber);
+                    transaction.InnerTransaction.ValueBytes = Converter.Xor(currentValue, Converter.Utf8ToBytes(transaction.InnerTransaction.Value));
+                    transaction.InnerTransaction.XorValueSize = (ushort)(newValue.Length - currentValue.Length);
+                }
+                else
+                {
+                    throw new NullReferenceException("Metadata not found");    
+                }
+            }
+            else
+            {
+                transaction.InnerTransaction.UlongScopedMetadataKey = IdGenerator.GenerateUlongKey(transaction.InnerTransaction.ScopedMetadataKey);
+                transaction.InnerTransaction.ValueBytes = Converter.Utf8ToBytes(transaction.InnerTransaction.Value);
+                transaction.InnerTransaction.XorValueSize = (ushort)newValue.Length;
+            }   
+        }
+        if(Transaction.GetType() == typeof(MosaicMetadataTransaction))
+        {
+            var transaction = (MosaicMetadataTransaction)Transaction;
+            var newValue = Converter.Utf8ToBytes(transaction.InnerTransaction.Value);
+            if (Converter.IsHexString(transaction.InnerTransaction.ScopedMetadataKey))
+            {
+                var json = await NodeServices.GetDataFromApi(transaction.InnerTransaction.Node, $"/metadata?scopedMetadataKey={transaction.InnerTransaction.ScopedMetadataKey}&targetId={transaction.InnerTransaction.TargetMosaicId}");
+                var s = JsonNode.Parse(json);
+                if (s?["data"][0]["metadataEntry"]["value"] != null)
+                {
+                    var currentValue = Converter.HexToBytes((string)s["data"][0]["metadataEntry"]?["value"]);
+                    transaction.InnerTransaction.UlongScopedMetadataKey = ulong.Parse(transaction.InnerTransaction.ScopedMetadataKey, System.Globalization.NumberStyles.HexNumber);
+                    transaction.InnerTransaction.ValueBytes = Converter.Xor(currentValue, Converter.Utf8ToBytes(transaction.InnerTransaction.Value));
+                    transaction.InnerTransaction.XorValueSize = (ushort)(newValue.Length - currentValue.Length);
+                }
+                else
+                {
+                    throw new NullReferenceException("Metadata not found");    
+                }
+            }
+            else
+            {
+                transaction.InnerTransaction.UlongScopedMetadataKey = IdGenerator.GenerateUlongKey(transaction.InnerTransaction.ScopedMetadataKey);
+                transaction.InnerTransaction.ValueBytes = Converter.Utf8ToBytes(transaction.InnerTransaction.Value);
+                transaction.InnerTransaction.XorValueSize = (ushort)newValue.Length;
+            }
+        }
+        if(Transaction.GetType() == typeof(NamespaceMetadataTransaction))
+        {
+            var transaction = (NamespaceMetadataTransaction)Transaction;
+            var newValue = Converter.Utf8ToBytes(transaction.InnerTransaction.Value);
+            if (Converter.IsHexString(transaction.InnerTransaction.ScopedMetadataKey))
+            {
+                var json = await NodeServices.GetDataFromApi(transaction.InnerTransaction.Node, $"/metadata?scopedMetadataKey={transaction.InnerTransaction.ScopedMetadataKey}&targetId={transaction.InnerTransaction.TargetNamespaceId}");
+                var s = JsonNode.Parse(json);
+                if (s?["data"][0]["metadataEntry"]["value"] != null)
+                {
+                    var currentValue = Converter.HexToBytes((string)s["data"][0]["metadataEntry"]?["value"]);
+                    transaction.InnerTransaction.UlongScopedMetadataKey = ulong.Parse(transaction.InnerTransaction.ScopedMetadataKey, System.Globalization.NumberStyles.HexNumber);
+                    transaction.InnerTransaction.ValueBytes = Converter.Xor(currentValue, Converter.Utf8ToBytes(transaction.InnerTransaction.Value));
+                    transaction.InnerTransaction.XorValueSize = (ushort)(newValue.Length - currentValue.Length);
+                }
+                else
+                {
+                    throw new NullReferenceException("Metadata not found");    
+                }
+            }
+            else
+            {
+                transaction.InnerTransaction.UlongScopedMetadataKey = IdGenerator.GenerateUlongKey(transaction.InnerTransaction.ScopedMetadataKey);
+                transaction.InnerTransaction.ValueBytes = Converter.Utf8ToBytes(transaction.InnerTransaction.Value);
+                transaction.InnerTransaction.XorValueSize = (ushort)newValue.Length;
+            } 
+        }
+    }
+
+    public static async Task<IBaseTransaction> BuildTransaction(aLice_utils.Shared.Models.Transaction.IBaseTransaction transaction, bool b)
+    {
+        if (transaction.GetType() == typeof(AccountMetadataTransaction) || transaction.GetType() == typeof(MosaicMetadataTransaction) || transaction.GetType() == typeof(NamespaceMetadataTransaction))
+        {
+            await RebuildMetadataInfo((BaseTransaction)transaction);
+        }
         if (TransactionBuilders.TryGetValue(transaction.GetType(), out var buildFunction))
         {
-            return buildFunction(transaction, b);
+            return await buildFunction(transaction, b);
         }
         throw new Exception("Transaction type not defined.");
     }
@@ -569,9 +661,7 @@ public abstract class SymbolBuilderService
         var targetAddress = Transaction.InnerTransaction.TargetAddress != "" 
             ? new UnresolvedAddress(Converter.StringToAddress(Transaction.InnerTransaction.TargetAddress)) 
             : new UnresolvedAddress();
-        var key = IdGenerator.GenerateUlongKey(Transaction.InnerTransaction.ScopedMetadataKey);
-        var valueBytes = Converter.Utf8ToBytes(Transaction.InnerTransaction.Value);
-
+        
         if (isEmbedded)
         {
             return new EmbeddedAccountMetadataTransactionV1()
@@ -579,9 +669,9 @@ public abstract class SymbolBuilderService
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 TargetAddress = targetAddress,
-                ScopedMetadataKey = key,
-                Value = valueBytes,
-                ValueSizeDelta = (ushort)valueBytes.Length,
+                ScopedMetadataKey = Transaction.InnerTransaction.UlongScopedMetadataKey,
+                Value = Transaction.InnerTransaction.ValueBytes,
+                ValueSizeDelta = Transaction.InnerTransaction.XorValueSize,
             };
         }
         {
@@ -592,9 +682,9 @@ public abstract class SymbolBuilderService
                 SignerPublicKey = Transaction.InnerTransaction.SignerPublicKey != "" ? new PublicKey(Converter.HexToBytes(Transaction.InnerTransaction.SignerPublicKey)) : new PublicKey(),
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 TargetAddress = targetAddress,
-                ScopedMetadataKey = key,
-                Value = valueBytes,
-                ValueSizeDelta = (ushort)valueBytes.Length,
+                ScopedMetadataKey = Transaction.InnerTransaction.UlongScopedMetadataKey,
+                Value = Transaction.InnerTransaction.ValueBytes,
+                ValueSizeDelta = Transaction.InnerTransaction.XorValueSize,
             };   
         }
     }
@@ -607,8 +697,6 @@ public abstract class SymbolBuilderService
         var targetMosaicId = Transaction.InnerTransaction.TargetMosaicId != "" 
             ? new UnresolvedMosaicId(Convert.ToUInt64(Transaction.InnerTransaction.TargetMosaicId, 16)) 
             : new UnresolvedMosaicId();
-        var key = IdGenerator.GenerateUlongKey(Transaction.InnerTransaction.ScopedMetadataKey);
-        var valueBytes = Converter.Utf8ToBytes(Transaction.InnerTransaction.Value);
 
         if (isEmbedded)
         {
@@ -618,9 +706,9 @@ public abstract class SymbolBuilderService
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 TargetMosaicId = targetMosaicId,
                 TargetAddress = targetAddress,
-                ScopedMetadataKey = key,
-                Value = valueBytes,
-                ValueSizeDelta = (ushort)valueBytes.Length,
+                ScopedMetadataKey = Transaction.InnerTransaction.UlongScopedMetadataKey,
+                Value = Transaction.InnerTransaction.ValueBytes,
+                ValueSizeDelta = Transaction.InnerTransaction.XorValueSize,
             };
         }
         {
@@ -632,9 +720,9 @@ public abstract class SymbolBuilderService
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 TargetMosaicId = targetMosaicId,
                 TargetAddress = targetAddress,
-                ScopedMetadataKey = key,
-                Value = valueBytes,
-                ValueSizeDelta = (ushort)valueBytes.Length,
+                ScopedMetadataKey = Transaction.InnerTransaction.UlongScopedMetadataKey,
+                Value = Transaction.InnerTransaction.ValueBytes,
+                ValueSizeDelta = Transaction.InnerTransaction.XorValueSize,
             };   
         }
     }
@@ -647,8 +735,6 @@ public abstract class SymbolBuilderService
         var targetNamespaceId = Transaction.InnerTransaction.TargetNamespaceId != "" 
             ? new NamespaceId(Convert.ToUInt64(Transaction.InnerTransaction.TargetNamespaceId, 16)) 
             : new NamespaceId();
-        var key = IdGenerator.GenerateUlongKey(Transaction.InnerTransaction.ScopedMetadataKey);
-        var valueBytes = Converter.Utf8ToBytes(Transaction.InnerTransaction.Value);
 
         if (isEmbedded)
         {
@@ -658,9 +744,9 @@ public abstract class SymbolBuilderService
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 TargetAddress = targetAddress,
                 TargetNamespaceId = targetNamespaceId,
-                ScopedMetadataKey = key,
-                Value = valueBytes,
-                ValueSizeDelta = (ushort)valueBytes.Length,
+                ScopedMetadataKey = Transaction.InnerTransaction.UlongScopedMetadataKey,
+                Value = Transaction.InnerTransaction.ValueBytes,
+                ValueSizeDelta = Transaction.InnerTransaction.XorValueSize,
             };
         }
         {
@@ -672,9 +758,9 @@ public abstract class SymbolBuilderService
                 Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET, 
                 TargetAddress = targetAddress,
                 TargetNamespaceId = targetNamespaceId,
-                ScopedMetadataKey = key,
-                Value = valueBytes,
-                ValueSizeDelta = (ushort)valueBytes.Length,
+                ScopedMetadataKey = Transaction.InnerTransaction.UlongScopedMetadataKey,
+                Value = Transaction.InnerTransaction.ValueBytes,
+                ValueSizeDelta = Transaction.InnerTransaction.XorValueSize,
             };   
         }
     }
@@ -1006,7 +1092,7 @@ public abstract class SymbolBuilderService
         }
     }
     
-    private static AggregateCompleteTransactionV2 BuildAggregateCompleteTransaction(AggregateCompleteTransaction Transaction)
+    private static async Task<AggregateCompleteTransactionV2> BuildAggregateCompleteTransaction(AggregateCompleteTransaction Transaction)
     {
         var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
         var aggTx = new AggregateCompleteTransactionV2()
@@ -1015,7 +1101,7 @@ public abstract class SymbolBuilderService
             Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
             Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET
         };
-        var innerTransactions = Transaction.Transactions.Select(t => BuildTransactionFromInner(t.Value)).ToList();
+        var innerTransactions = (await Task.WhenAll(Transaction.Transactions.Select(t => BuildTransactionFromInner(t.Value)))).ToList();
         foreach (var innerTransaction in innerTransactions)
         {
             innerTransaction.Network = aggTx.Network;
@@ -1027,7 +1113,7 @@ public abstract class SymbolBuilderService
         return aggTx;
     }
     
-    private static AggregateBondedTransactionV2 BuildAggregateBondedTransaction(AggregateBondedTransaction Transaction)
+    private static async Task<AggregateBondedTransactionV2> BuildAggregateBondedTransaction(AggregateBondedTransaction Transaction)
     {
         var facade = new SymbolFacade(Transaction.TransactionMeta.NetworkType == "MainNet" ? Network.MainNet : Network.TestNet);
         var aggTx = new AggregateBondedTransactionV2()
@@ -1036,7 +1122,7 @@ public abstract class SymbolBuilderService
             Deadline = new Timestamp(facade.Network.FromDatetime<NetworkTimestamp>(DateTime.UtcNow).AddSeconds(ulong.Parse(Transaction.TransactionMeta.Deadline)).Timestamp),
             Network = Transaction.TransactionMeta.NetworkType == "MainNet" ? NETWORKTYPE.MAINNET : NETWORKTYPE.TESTNET
         };
-        var innerTransactions = Transaction.Transactions.Select(t => BuildTransactionFromInner(t.Value)).ToList();
+        var innerTransactions = (await Task.WhenAll(Transaction.Transactions.Select(t => BuildTransactionFromInner(t.Value)))).ToList();
         foreach (var innerTransaction in innerTransactions)
         {
             innerTransaction.Network = aggTx.Network;
@@ -1048,7 +1134,7 @@ public abstract class SymbolBuilderService
         return aggTx;
     }
 
-    private static IBaseTransaction BuildTransactionFromInner(IInnerTransaction innerTransaction)
+    private static async Task<IBaseTransaction> BuildTransactionFromInner(IInnerTransaction innerTransaction)
     {
         if (innerTransaction.GetType() == typeof(InnerTransferTransaction))
         {
@@ -1056,7 +1142,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerTransferTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
 
         if (innerTransaction.GetType() == typeof(InnerMosaicDefinitionTransaction))
@@ -1065,7 +1151,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerMosaicDefinitionTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerMosaicSupplyChangeTransaction))
@@ -1074,7 +1160,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerMosaicSupplyChangeTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerMosaicSupplyRevocationTransaction))
@@ -1083,7 +1169,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerMosaicSupplyRevocationTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerAccountKeyLinkTransaction))
@@ -1092,7 +1178,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerAccountKeyLinkTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerNodeKeyLinkTransaction))
@@ -1101,7 +1187,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerNodeKeyLinkTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerVotingKeyLinkTransaction))
@@ -1110,7 +1196,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerVotingKeyLinkTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerVrfKeyLinkTransaction))
@@ -1119,7 +1205,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerVrfKeyLinkTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerHashLockTransaction))
@@ -1128,7 +1214,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerHashLockTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerSecretLockTransaction))
@@ -1137,7 +1223,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerSecretLockTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerSecretProofTransaction))
@@ -1146,7 +1232,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerSecretProofTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerAccountMetadataTransaction))
@@ -1155,7 +1241,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerAccountMetadataTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerMosaicMetadataTransaction))
@@ -1164,7 +1250,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerMosaicMetadataTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerNamespaceMetadataTransaction))
@@ -1173,7 +1259,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerNamespaceMetadataTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerMultisigAccountModificationTransaction))
@@ -1182,7 +1268,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerMultisigAccountModificationTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerAddressAliasTransaction))
@@ -1191,7 +1277,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerAddressAliasTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerMosaicAliasTransaction))
@@ -1200,7 +1286,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerMosaicAliasTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerNamespaceRegistrationTransaction))
@@ -1209,7 +1295,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerNamespaceRegistrationTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerAccountAddressRestrictionTransaction))
@@ -1218,7 +1304,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerAccountAddressRestrictionTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerAccountMosaicRestrictionTransaction))
@@ -1227,7 +1313,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerAccountMosaicRestrictionTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerAccountOperationRestrictionTransaction))
@@ -1236,7 +1322,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerAccountOperationRestrictionTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerMosaicAddressRestrictionTransaction))
@@ -1245,7 +1331,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerMosaicAddressRestrictionTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         if (innerTransaction.GetType() == typeof(InnerMosaicGlobalRestrictionTransaction))
@@ -1254,7 +1340,7 @@ public abstract class SymbolBuilderService
             {
                 InnerTransaction = (InnerMosaicGlobalRestrictionTransaction) innerTransaction,
             };
-            return BuildTransaction(tx, true);
+            return await BuildTransaction(tx, true);
         }
         
         throw new Exception("Transaction type not found");

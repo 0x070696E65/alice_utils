@@ -29,7 +29,7 @@ public class NodeServices
                 }
                 catch (Exception e)
                 {
-                    throw new Exception(e.Message);
+                    //throw new Exception(e.Message);
                 }
             }
         }
@@ -56,13 +56,13 @@ public class NodeServices
                 }
                 catch (Exception e)
                 {
-                    throw new Exception(e.Message);
+                    //throw new Exception(e.Message);
                 }
             }
         }
     }
     
-    private readonly List<string> TestNetNodes = new List<string> { "https://001-sai-dual.symboltest.net:3001", "https://vmi831828.contaboserver.net:3001", "https://mikun-testnet.tk:3001", "https://sym-test-01.opening-line.jp:3001" };
+    private readonly List<string> TestNetNodes = new List<string> { "https://001-sai-dual.symboltest.net:3001", "https://vmi831828.contaboserver.net:3001", "https://sym-test-01.opening-line.jp:3001" };
     private readonly List<string> MainNetNodes = new List<string> { "https://wolf.importance.jp:3001", "https://symbol-node.harvest-xym.com:3001", "https://xxx-welcome-to-a-powerful-node.com:3001", "https://symbol.pan-farm.com:3001", "https://00A06705.xym.stir-hosyu.com:3001", "https://00fabf14.xym.stir-hosyu.com:3001", "https://xym10.allnodes.me:3001", "https://xym767.allnodes.me:3001", "https://xym704.allnodes.me:3001", "https://xym686.allnodes.me:3001", "https://xym660.allnodes.me:3001" };
 
     public class NodeHealth

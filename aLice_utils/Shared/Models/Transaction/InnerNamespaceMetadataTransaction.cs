@@ -7,4 +7,9 @@ public class InnerNamespaceMetadataTransaction: IInnerTransaction
     public string TargetNamespaceId { get; set; } = "";
     public string ScopedMetadataKey { get; set; } = "";
     public string Value { get; set; } = "";
+    public ulong UlongScopedMetadataKey { get; set; }
+    public byte[] ValueBytes { get; set; } = Array.Empty<byte>();
+    
+    public string Node { get; set; } = "";
+    public ushort XorValueSize { get; set; }
 }

@@ -31,7 +31,12 @@
         }
     </BSInputGroup>
 </BSForm>
-<Result qrSource="@qrSource" alice="@alice" isResult="@isResult" showSpinner="@showSpinner" 
+<Result qrSource="@qrSource" 
+        alice="@alice" 
+        isResult="@isResult" 
+        showSpinner="@showSpinner" 
+        payload="@payload" 
+        transactionMeta="@Transaction.TransactionMeta"
         IsOfflineAnnounceResult="@isOfflineAnnounceResult"
         IsOfflineAnnounceResultError="@isOfflineAnnounceResultError"
         OfflineAnnounceResult="@offlineAnnounceResult"
@@ -46,6 +51,7 @@
     
     private string? qrSource;
     string? alice;
+    string? payload;
     bool isResult;
     bool showSpinner;
     bool isFirstBuild;
@@ -66,7 +72,7 @@
         StateHasChanged();
     }
     
-    private async void Submit()
+    private async Task Submit()
     {
         showSpinner = true;
         if (Transaction.GetType() == typeof(aLice_utils.Shared.Models.Transaction.CosignatureTransaction))
@@ -146,8 +152,26 @@
         }
         else
         {
-            var tx = SymbolBuilderService.BuildTransaction(Transaction, false);
-            Console.WriteLine(tx);
+            if (Transaction.GetType() == typeof(AggregateCompleteTransaction) || Transaction.GetType() == typeof(AggregateBondedTransaction))
+            {
+                var aggTx = (IAggregateTransaction) Transaction;
+                foreach (var aggTxTransaction in aggTx.Transactions)
+                {
+                    if(aggTxTransaction.Value.GetType() == typeof(InnerAccountMetadataTransaction))
+                    {
+                        ((InnerAccountMetadataTransaction) aggTxTransaction.Value).Node = Transaction.TransactionMeta.Node;
+                    }
+                    if(aggTxTransaction.Value.GetType() == typeof(InnerMosaicMetadataTransaction))
+                    {
+                        ((InnerMosaicMetadataTransaction) aggTxTransaction.Value).Node = Transaction.TransactionMeta.Node;
+                    }
+                    if(aggTxTransaction.Value.GetType() == typeof(InnerNamespaceMetadataTransaction))
+                    {
+                        ((InnerNamespaceMetadataTransaction) aggTxTransaction.Value).Node = Transaction.TransactionMeta.Node;
+                    }
+                }
+            }
+            var tx = await SymbolBuilderService.BuildTransaction(Transaction, false);
             if (Transaction.GetType() == typeof(AggregateCompleteTransaction) || Transaction.GetType() == typeof(AggregateBondedTransaction))
             {
                 var aggTx = (IAggregateTransaction) Transaction;
@@ -165,7 +189,8 @@
             {
                 alice += $"&deadline={Transaction.TransactionMeta.Deadline}";   
             }
-            
+
+            payload = Converter.BytesToHex(tx.Serialize());
             qrSource = await QRServices.GenerateQR(alice);
             showSpinner = false;
             isResult = true;

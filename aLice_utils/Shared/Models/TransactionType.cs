@@ -35,7 +35,9 @@ public abstract class TransactionTypeExtension
 {
     public static List<string> GetTransactionTypeList()
     {
-        return Enum.GetValues(typeof(TransactionType)).Cast<TransactionType>().Select(x => x.ToString()).ToList();
+        var txList = Enum.GetValues(typeof(TransactionType)).Cast<TransactionType>().Select(x => x.ToString()).ToList();
+        txList.RemoveAll(item => item.Contains("Metadata"));
+        return txList;
     } 
     public static List<string> GetInnerTransactionTypeList()
     {
